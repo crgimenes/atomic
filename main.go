@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"time"
 
 	"github.com/crgimenes/goConfig"
 	log "github.com/nuveo/logSys"
@@ -105,12 +106,36 @@ func read(conn net.Conn, size int) (rbuf []byte, err error) {
 func handleRequest(conn net.Conn) {
 
 	sendSetup(conn)
+	cChar := make(chan byte)
+	cErr := make(chan error)
 
 	defer conn.Close()
+
+	//conn.SetReadDeadline(time.Now().Add(timeoutDuration))
+	go func() {
+		for {
+			buf := make([]byte, 1024)
+			rLen, err := conn.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					log.Println("close: ", conn.LocalAddr(), " - ", conn.RemoteAddr())
+					return
+				}
+
+				log.Errorln("Error reading:", err.Error())
+				cErr <- err
+				return
+			}
+
+			for i := 0; i < rLen; i++ {
+				cChar <- buf[i]
+			}
+		}
+	}()
+
 	for {
-		buf := make([]byte, 1024)
-		_, err := conn.Read(buf)
-		if err != nil {
+		select {
+		case err := <-cErr:
 			if err == io.EOF {
 				log.Println("close: ", conn.LocalAddr(), " - ", conn.RemoteAddr())
 				return
@@ -118,12 +143,19 @@ func handleRequest(conn net.Conn) {
 
 			log.Errorln("Error reading:", err.Error())
 			return
-		}
+		case c := <-cChar:
+			fmt.Printf("%q\t%v\t0x%0X\n", c, c, c)
+			if c == 'q' {
+				return
+			}
+			var buf []byte
+			buf = append(buf, c)
+			conn.Write(buf)
 
-		if buf[0] == 'q' {
-			return
+		case <-time.After(1 * time.Second):
+			println(".")
+			conn.Write([]byte("."))
 		}
-		conn.Write(buf)
 	}
 }
 
