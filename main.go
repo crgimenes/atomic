@@ -68,7 +68,7 @@ func telnet(c byte) (r bool) {
 	return
 }
 
-func sendSetup(conn net.Conn) (err error) {
+func sendSetup(conn *net.TCPConn) (err error) {
 	conn.Write([]byte{255, 251, 3})
 	conn.Write([]byte{255, 251, 1})
 
@@ -83,7 +83,7 @@ func sendSetup(conn net.Conn) (err error) {
 	return
 }
 
-func read(conn net.Conn, size int) (rbuf []byte, err error) {
+func read(conn *net.TCPConn, size int) (rbuf []byte, err error) {
 	buf := make([]byte, size+1024)
 	var rLen int
 	var totLen int
@@ -103,7 +103,7 @@ func read(conn net.Conn, size int) (rbuf []byte, err error) {
 	return
 }
 
-func handleRequest(conn net.Conn) {
+func handleRequest(conn *net.TCPConn) {
 
 	sendSetup(conn)
 	cChar := make(chan byte)
@@ -111,10 +111,10 @@ func handleRequest(conn net.Conn) {
 
 	defer conn.Close()
 
-	//conn.SetReadDeadline(time.Now().Add(timeoutDuration))
 	go func() {
 		for {
 			buf := make([]byte, 1024)
+
 			rLen, err := conn.Read(buf)
 			if err != nil {
 				if err == io.EOF {
@@ -146,6 +146,11 @@ func handleRequest(conn net.Conn) {
 		case c := <-cChar:
 			fmt.Printf("%q\t%v\t0x%0X\n", c, c, c)
 			if c == 'q' {
+				err := conn.CloseRead()
+				if err != nil {
+					log.Errorln(err.Error())
+				}
+				time.Sleep(time.Second)
 				return
 			}
 			var buf []byte
@@ -173,7 +178,12 @@ func main() {
 		log.Warningln("debug mode on")
 	}
 
-	l, err := net.Listen("tcp", ":8888")
+	rAddr, err := net.ResolveTCPAddr("tcp", ":8888")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", rAddr)
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
 		os.Exit(1)
@@ -183,7 +193,7 @@ func main() {
 
 	for {
 		// Listen for an incoming connection.
-		conn, err := l.Accept()
+		conn, err := l.AcceptTCP()
 		if err != nil {
 			log.Fatal("Error accepting: ", err.Error())
 			os.Exit(1)
