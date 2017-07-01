@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -8,13 +8,9 @@ import (
 	"time"
 
 	"github.com/crgimenes/atomic/con/adapters/telnet"
-	"github.com/crgimenes/goConfig"
+	"github.com/crgimenes/atomic/config"
 	log "github.com/nuveo/logSys"
 )
-
-type config struct {
-	Debug bool
-}
 
 func handleRequest(conn *net.TCPConn) {
 	cChar := make(chan byte)
@@ -77,21 +73,9 @@ func handleRequest(conn *net.TCPConn) {
 	}
 }
 
-func main() {
-	cfg := config{}
-
-	err := goConfig.Parse(&cfg)
-	if err != nil {
-		log.Errorln(err.Error())
-		return
-	}
-
-	if cfg.Debug {
-		log.DebugMode = cfg.Debug
-		log.Warningln("debug mode on")
-	}
-
-	rAddr, err := net.ResolveTCPAddr("tcp", ":8888")
+func Run() {
+	host := fmt.Sprintf("%s:%d", config.Get.Host, config.Get.Port)
+	rAddr, err := net.ResolveTCPAddr("tcp", host)
 	if err != nil {
 		panic(err)
 	}
@@ -101,6 +85,8 @@ func main() {
 		fmt.Println("Error listening:", err.Error())
 		os.Exit(1)
 	}
+	log.Warningln("Server listen at ", rAddr)
+
 	// Close the listener when the application closes.
 	defer l.Close()
 
@@ -108,12 +94,11 @@ func main() {
 		// Listen for an incoming connection.
 		conn, err := l.AcceptTCP()
 		if err != nil {
-			log.Fatal("Error accepting: ", err.Error())
-			os.Exit(1)
+			log.Warningln("Error accepting: ", err.Error())
+			continue
 		}
 
 		// Handle connections in a new goroutine.
 		go handleRequest(conn)
 	}
-
 }
