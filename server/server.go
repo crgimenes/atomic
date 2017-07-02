@@ -104,7 +104,12 @@ func Run() {
 	log.Warningln("Server listen at ", rAddr)
 
 	// Close the listener when the application closes.
-	defer l.Close()
+	defer func() {
+		cErr := l.Close()
+		if cErr != nil {
+			log.Errorln(cErr)
+		}
+	}()
 
 	for {
 		// Listen for an incoming connection.
