@@ -12,22 +12,36 @@ import (
 	log "github.com/nuveo/logSys"
 )
 
-func handleRequest(conn *net.TCPConn) {
+type Prot int
+
+const (
+	Raw Prot = iota
+	Telnet
+)
+
+type Client struct {
+	Protocol Prot
+	Conn     *net.TCPConn
+}
+
+func handleRequest(client Client) {
 	cChar := make(chan byte)
 	cErr := make(chan error)
 
-	telnet.SendSetup(conn)
+	telnet.SendSetup(client.Conn)
 
-	defer conn.Close()
+	defer client.Conn.Close()
 
 	go func() {
 		for {
 			buf := make([]byte, 1024)
 
-			rLen, err := conn.Read(buf)
+			rLen, err := client.Conn.Read(buf)
 			if err != nil {
 				if err == io.EOF {
-					log.Println("close: ", conn.LocalAddr(), " - ", conn.RemoteAddr())
+					log.Println("close: ",
+						client.Conn.LocalAddr(), " - ",
+						client.Conn.RemoteAddr())
 					return
 				}
 
@@ -46,7 +60,9 @@ func handleRequest(conn *net.TCPConn) {
 		select {
 		case err := <-cErr:
 			if err == io.EOF {
-				log.Println("close: ", conn.LocalAddr(), " - ", conn.RemoteAddr())
+				log.Println("close: ",
+					client.Conn.LocalAddr(), " - ",
+					client.Conn.RemoteAddr())
 				return
 			}
 
@@ -55,7 +71,7 @@ func handleRequest(conn *net.TCPConn) {
 		case c := <-cChar:
 			fmt.Printf("%q\t%v\t0x%0X\n", c, c, c)
 			if c == 'q' {
-				err := conn.CloseRead()
+				err := client.Conn.CloseRead()
 				if err != nil {
 					log.Errorln(err.Error())
 				}
@@ -64,11 +80,11 @@ func handleRequest(conn *net.TCPConn) {
 			}
 			var buf []byte
 			buf = append(buf, c)
-			conn.Write(buf)
+			client.Conn.Write(buf)
 
 		case <-time.After(1 * time.Second):
 			println(".")
-			conn.Write([]byte("."))
+			client.Conn.Write([]byte("."))
 		}
 	}
 }
@@ -82,7 +98,7 @@ func Run() {
 
 	l, err := net.ListenTCP("tcp", rAddr)
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
+		log.Errorln("Error listening:", err.Error())
 		os.Exit(1)
 	}
 	log.Warningln("Server listen at ", rAddr)
@@ -98,7 +114,12 @@ func Run() {
 			continue
 		}
 
+		client := Client{
+			Conn:     conn,
+			Protocol: Telnet,
+		}
+
 		// Handle connections in a new goroutine.
-		go handleRequest(conn)
+		go handleRequest(client)
 	}
 }
