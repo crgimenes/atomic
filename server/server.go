@@ -24,6 +24,23 @@ type Client struct {
 	Conn     *net.TCPConn
 }
 
+var clientList []Client
+
+func (c *Client) Close() (err error) {
+	err = c.Conn.CloseRead()
+	if err != nil {
+		log.Errorln(err)
+	}
+	time.Sleep(time.Second)
+	err = c.Conn.Close()
+	return
+}
+
+func (c *Client) Write(msg []byte) (err error) {
+	_, err = c.Conn.Write(msg)
+	return
+}
+
 func handleRequest(client Client) {
 	cChar := make(chan byte)
 	cErr := make(chan error)
@@ -123,6 +140,8 @@ func Run() {
 			Conn:     conn,
 			Protocol: Telnet,
 		}
+
+		clientList = append(clientList, client)
 
 		// Handle connections in a new goroutine.
 		go handleRequest(client)
