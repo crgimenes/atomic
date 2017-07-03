@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 
@@ -22,11 +21,10 @@ func main() {
 		signal.Notify(sc, os.Interrupt)
 		<-sc
 
-		log.Warningln("\r\nshutting down...\r\n")
+		log.Warningln("shutting down...")
 
 		// clear
 
-		fmt.Printf("have a nice day!\r\n")
 		os.Exit(0)
 	}()
 
