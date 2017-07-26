@@ -29,9 +29,9 @@ var clientList []Client
 func (c *Client) Close() (err error) {
 	err = c.Conn.CloseRead()
 	if err != nil {
-		log.Errorln(err)
+		return
 	}
-	time.Sleep(time.Second)
+	time.Sleep(300 * time.Millisecond)
 	err = c.Conn.Close()
 	return
 }
@@ -47,13 +47,19 @@ func handleRequest(client Client) {
 
 	telnet.SendSetup(client.Conn)
 
-	defer client.Conn.Close()
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			log.Errorln(err)
+		}
+	}()
 
 	go func() {
 		for {
+			// loop que pega todo que vier do usuário
 			buf := make([]byte, 1024)
 
-			rLen, err := client.Conn.Read(buf)
+			rLen, err := client.Conn.Read(buf) // Read precisa ser fechado explicitamente
 			if err != nil {
 				if err == io.EOF {
 					log.Println("close: ",
@@ -63,17 +69,19 @@ func handleRequest(client Client) {
 				}
 
 				log.Errorln("Error reading:", err.Error())
-				cErr <- err
+				cErr <- err // envia erro para o supervisor (poderia mandar mais infos erro é uma interface)
 				return
 			}
 
 			for i := 0; i < rLen; i++ {
-				cChar <- buf[i]
+				cChar <- buf[i] // envia o char recebido para o supervisor
 			}
 		}
 	}()
 
 	for {
+		// Esse loop representa a rotina supervisor
+		// e faz tratamento dos canais inclusive erro
 		select {
 		case err := <-cErr:
 			if err == io.EOF {
@@ -82,22 +90,16 @@ func handleRequest(client Client) {
 					client.Conn.RemoteAddr())
 				return
 			}
-
 			log.Errorln("Error reading:", err.Error())
 			return
 		case c := <-cChar:
 			fmt.Printf("%q\t%v\t0x%0X\n", c, c, c)
 			if c == 'q' {
-				err := client.Conn.CloseRead()
-				if err != nil {
-					log.Errorln(err.Error())
-				}
-				time.Sleep(time.Second)
 				return
 			}
 			var buf []byte
 			buf = append(buf, c)
-			client.Conn.Write(buf)
+			//client.Conn.Write(buf)
 
 		case <-time.After(1 * time.Second):
 			println(".")
