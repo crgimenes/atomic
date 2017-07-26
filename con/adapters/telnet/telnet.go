@@ -59,5 +59,7 @@ func Log(c byte) (r bool) {
 
 func SendSetup(conn *net.TCPConn) (err error) {
 	_, err = conn.Write([]byte{255, 251, 3, 255, 251, 1})
+	//if !bytes.Equal(buf[0:6], []byte{255, 253, 3, 255, 253, 1}) {
+
 	return
 }
