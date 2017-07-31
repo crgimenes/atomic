@@ -9,7 +9,7 @@ import (
 
 	"github.com/crgimenes/atomic/con/adapters/telnet"
 	"github.com/crgimenes/atomic/config"
-	log "github.com/nuveo/logSys"
+	"github.com/nuveo/log"
 )
 
 type Prot int
@@ -69,7 +69,8 @@ func handleRequest(client Client) {
 				}
 
 				log.Errorln("Error reading:", err.Error())
-				cErr <- err // envia erro para o supervisor (poderia mandar mais infos erro é uma interface)
+				cErr <- err // envia erro para o supervisor
+				// (poderia mandar mais infos erro é uma interface)
 				return
 			}
 
