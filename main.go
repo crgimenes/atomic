@@ -7,7 +7,7 @@ import (
 
 	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/server"
-	log "github.com/nuveo/logSys"
+	log "github.com/nuveo/log"
 )
 
 func main() {

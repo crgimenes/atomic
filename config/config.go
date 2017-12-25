@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/crgimenes/goConfig"
-	log "github.com/nuveo/logSys"
+	"github.com/crgimenes/goconfig"
+	log "github.com/nuveo/log"
 )
 
 type Config struct {
@@ -14,7 +14,7 @@ type Config struct {
 var Get = Config{}
 
 func Load() (err error) {
-	err = goConfig.Parse(&Get)
+	err = goconfig.Parse(&Get)
 	if err != nil {
 		return
 	}
