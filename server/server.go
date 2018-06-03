@@ -12,20 +12,25 @@ import (
 	"github.com/nuveo/log"
 )
 
-type Prot int
+// ProtocolTyep defines the type of protocol used
+type ProtocolTyep int
 
 const (
-	Raw Prot = iota
+	// Raw (bytes stream only)
+	Raw ProtocolTyep = iota
+	// Telnet protocol
 	Telnet
 )
 
+// Client instance
 type Client struct {
-	Protocol Prot
+	Protocol ProtocolTyep
 	Conn     *net.TCPConn
 }
 
 var clientList []Client
 
+// Close client connection
 func (c *Client) Close() (err error) {
 	err = c.Conn.CloseRead()
 	if err != nil {
@@ -41,50 +46,58 @@ func (c *Client) Write(msg []byte) (err error) {
 	return
 }
 
+func closer(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		log.Errorln(err)
+	}
+}
+
+func input(client Client, cChar chan byte, cErr chan error) {
+	for {
+		// loop que pega todo que vier do usuário
+		buf := make([]byte, 1024)
+
+		rLen, err := client.Conn.Read(buf) // Read precisa ser fechado explicitamente
+		if err != nil {
+			if err == io.EOF {
+				log.Println("close: ",
+					client.Conn.LocalAddr(), " - ",
+					client.Conn.RemoteAddr())
+				return
+			}
+
+			log.Errorln("Error reading:", err.Error())
+			cErr <- err // envia erro para o supervisor
+			// (poderia mandar mais infos erro é uma interface)
+			return
+		}
+
+		for i := 0; i < rLen; i++ {
+			cChar <- buf[i] // envia o char recebido para o supervisor
+		}
+	}
+}
+
 func handleRequest(client Client) {
 	cChar := make(chan byte)
 	cErr := make(chan error)
 
-	telnet.SendSetup(client.Conn)
+	defer closer(&client)
 
-	defer func() {
-		err := client.Close()
-		if err != nil {
-			log.Errorln(err)
-		}
-	}()
+	err := telnet.SendSetup(client.Conn)
+	if err != nil {
+		log.Errorln(err)
+		return
+	}
 
-	go func() {
-		for {
-			// loop que pega todo que vier do usuário
-			buf := make([]byte, 1024)
-
-			rLen, err := client.Conn.Read(buf) // Read precisa ser fechado explicitamente
-			if err != nil {
-				if err == io.EOF {
-					log.Println("close: ",
-						client.Conn.LocalAddr(), " - ",
-						client.Conn.RemoteAddr())
-					return
-				}
-
-				log.Errorln("Error reading:", err.Error())
-				cErr <- err // envia erro para o supervisor
-				// (poderia mandar mais infos erro é uma interface)
-				return
-			}
-
-			for i := 0; i < rLen; i++ {
-				cChar <- buf[i] // envia o char recebido para o supervisor
-			}
-		}
-	}()
+	go input(client, cChar, cErr)
 
 	for {
 		// Esse loop representa a rotina supervisor
 		// e faz tratamento dos canais inclusive erro
 		select {
-		case err := <-cErr:
+		case err = <-cErr:
 			if err == io.EOF {
 				log.Println("close: ",
 					client.Conn.LocalAddr(), " - ",
@@ -98,17 +111,21 @@ func handleRequest(client Client) {
 			if c == 'q' {
 				return
 			}
-			var buf []byte
-			buf = append(buf, c)
-			//client.Conn.Write(buf)
+			// echo
+			//client.Conn.Write([]byte{c})
 
 		case <-time.After(1 * time.Second):
 			println(".")
-			client.Conn.Write([]byte("."))
+			_, err = client.Conn.Write([]byte("."))
+			if err != nil {
+				log.Errorln(err)
+				return
+			}
 		}
 	}
 }
 
+// Run connection loop
 func Run() {
 	host := fmt.Sprintf("%s:%d", config.Get.Host, config.Get.Port)
 	rAddr, err := net.ResolveTCPAddr("tcp", host)
