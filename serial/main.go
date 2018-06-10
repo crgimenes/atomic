@@ -3,12 +3,17 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/tarm/serial"
 )
 
 func main() {
-	c := &serial.Config{Name: "/dev/tty.wchusbserial1410", Baud: 115200}
+	c := &serial.Config{
+		Name:        "/dev/tty.wchusbserial1410",
+		Baud:        115200,
+		ReadTimeout: 1 * time.Second,
+	}
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		log.Fatal(err)
