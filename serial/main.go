@@ -8,22 +8,28 @@ import (
 )
 
 func main() {
-	c := &serial.Config{Name: "tty.wchusbserial1410", Baud: 115200}
+	c := &serial.Config{Name: "/dev/tty.wchusbserial1410", Baud: 115200}
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	n, err := s.Write([]byte("AT\r\n"))
-	if err != nil {
-		log.Fatal(err)
+	atList := []string{
+		"ATE0\r\n",
+		"AT\r\n",
 	}
-	fmt.Println("write ", n)
 
-	buf := make([]byte, 128)
-	n, err = s.Read(buf)
-	if err != nil {
-		log.Fatal(err)
+	for _, at := range atList {
+		n, err := s.Write([]byte(at))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("write ", n)
+		buf := make([]byte, 128)
+		n, err = s.Read(buf)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("%q", buf[:n])
 	}
-	log.Printf("%q", buf[:n])
 }
