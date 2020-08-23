@@ -6,7 +6,6 @@ import (
 	"os/signal"
 
 	"github.com/crgimenes/atomic/config"
-	"github.com/crgimenes/atomic/server"
 	log "github.com/nuveo/log"
 )
 
@@ -41,7 +40,5 @@ func main() {
 ╚██████╗██║  ██║╚██████╔╝██╗███████╗   ██║   ██║██╗██████╔╝██║  ██║
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝
 `)
-
-	server.Run()
 
 }
