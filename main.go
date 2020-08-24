@@ -2,18 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
 	"github.com/crgimenes/atomic/config"
-	log "github.com/nuveo/log"
+	"github.com/crgimenes/atomic/ssh"
 )
 
 func main() {
 
 	err := config.Load()
 	if err != nil {
-		log.Errorln(err)
+		log.Println(err)
 	}
 
 	go func() {
@@ -21,7 +22,7 @@ func main() {
 		signal.Notify(sc, os.Interrupt)
 		<-sc
 
-		log.Warningln("shutting down...")
+		log.Println("shutting down...")
 
 		// clear
 
@@ -40,5 +41,10 @@ func main() {
 ╚██████╗██║  ██║╚██████╔╝██╗███████╗   ██║   ██║██╗██████╔╝██║  ██║
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝
 `)
+
+	err = ssh.ListenAndServe()
+	if err != nil {
+		log.Println(err)
+	}
 
 }

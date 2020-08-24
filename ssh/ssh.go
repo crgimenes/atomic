@@ -1,4 +1,4 @@
-package main
+package ssh
 
 import (
 	"encoding/binary"
@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func main() {
+func ListenAndServe() error {
 
 	scfg := &ssh.ServerConfig{
 		// TODO: improve authentication (allow key pair authentication, etc.)
@@ -22,19 +22,19 @@ func main() {
 
 	b, err := ioutil.ReadFile("id_rsa")
 	if err != nil {
-		log.Fatal("failed to load private key (./id_rsa)", err.Error())
+		return fmt.Errorf("failed to load private key, %v", err.Error())
 	}
 
 	pk, err := ssh.ParsePrivateKey(b)
 	if err != nil {
-		log.Fatal("failed to parse private key", err.Error())
+		return fmt.Errorf("failed to parse private key, %v", err.Error())
 	}
 
 	scfg.AddHostKey(pk)
 
 	listener, err := net.Listen("tcp", "0.0.0.0:2200")
 	if err != nil {
-		log.Fatal("failed to listen on 2200", err.Error())
+		return fmt.Errorf("failed to listen on 2200, %v", err.Error())
 	}
 
 	log.Print("Listening on 2200...")
@@ -137,8 +137,6 @@ func handleChannel(newChannel ssh.NewChannel) {
 		}
 	}
 }
-
-// =======================
 
 // parseDims extracts terminal dimensions (width x height) from the provided buffer.
 func parseDims(b []byte) (uint32, uint32) {
