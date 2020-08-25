@@ -7,9 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
+
+var mux sync.Mutex
 
 func ListenAndServe() error {
 
@@ -32,16 +35,16 @@ func ListenAndServe() error {
 
 	scfg.AddHostKey(pk)
 
-	listener, err := net.Listen("tcp", "0.0.0.0:2200")
+	l, err := net.Listen("tcp", "0.0.0.0:2200")
 	if err != nil {
 		return fmt.Errorf("failed to listen on 2200, %v", err.Error())
 	}
 
-	log.Print("Listening on 2200...")
+	log.Print("listening at 0.0.0.0:2200")
 	for {
-		conn, err := listener.Accept()
+		conn, err := l.Accept()
 		if err != nil {
-			log.Println("failed to accept incoming connection", err.Error())
+			log.Println("failed to accept incoming conn", err.Error())
 			continue
 		}
 		// Before use, a handshake must be performed on the incoming net.Conn.
@@ -51,7 +54,9 @@ func ListenAndServe() error {
 			continue
 		}
 
-		log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
+		log.Printf("new SSH conn from %s (%s)",
+			sshConn.RemoteAddr(),
+			sshConn.ClientVersion())
 		// Discard all global out-of-band Requests
 		go ssh.DiscardRequests(reqs)
 		// Accept all channels
@@ -73,17 +78,20 @@ func handleChannel(newChannel ssh.NewChannel) {
 	// channel types.
 	t := newChannel.ChannelType()
 	if t != "session" {
-		newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
+		newChannel.Reject(ssh.UnknownChannelType,
+			fmt.Sprintf("unknown channel type: %s", t))
 		return
 	}
 
 	// At this point, we have the opportunity to reject the client's
-	// request for another logical connection
-	connection, requests, err := newChannel.Accept()
+	// request for another logical conn
+	conn, requests, err := newChannel.Accept()
 	if err != nil {
 		log.Printf("Could not accept channel (%s)", err)
 		return
 	}
+
+	var th, tw uint32
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
@@ -99,27 +107,32 @@ func handleChannel(newChannel ssh.NewChannel) {
 			case "pty-req":
 				fmt.Println("pty-req")
 				termLen := req.Payload[3]
-				w, h := parseDims(req.Payload[termLen+4:])
-				fmt.Println(w, h)
+				mux.Lock()
+				tw, th = parseDims(req.Payload[termLen+4:])
+				fmt.Println(tw, th)
+				mux.Unlock()
 				req.Reply(true, nil)
 			case "window-change":
 				fmt.Println("window-change")
-				w, h := parseDims(req.Payload)
-				fmt.Println(w, h)
+				mux.Lock()
+				tw, th = parseDims(req.Payload)
+				fmt.Println(tw, th)
+				mux.Unlock()
 			}
 		}
 	}()
 
-	io.WriteString(connection, "Welcome banner\n")
+	io.WriteString(conn, "Welcome banner\r\n")
 	b := make([]byte, 8)
 	for {
-		n, err := connection.Read(b)
+		n, err := conn.Read(b)
 		fmt.Printf("n = %v err = %v b = %v\n", n, err, b)
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		if b[0] == 'q' {
-			io.WriteString(connection, "*** Bye! ***\n")
-			connection.Close()
+			io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", tw, th))
+			io.WriteString(conn, "*** Bye! ***\r\n")
+			conn.Close()
 			break
 		}
 
@@ -131,7 +144,7 @@ func handleChannel(newChannel ssh.NewChannel) {
 			}
 		}
 
-		io.WriteString(connection, string(nb))
+		io.WriteString(conn, string(nb))
 		if err == io.EOF {
 			break
 		}
