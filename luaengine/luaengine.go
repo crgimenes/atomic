@@ -15,6 +15,14 @@ type LuaExtender struct {
 	luaState *lua.LState
 }
 
+func New() *LuaExtender {
+	le := &LuaExtender{}
+
+	le.luaState = lua.NewState()
+	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
+	return le
+}
+
 func pwd() string {
 	d, err := os.Getwd()
 	if err != nil {
@@ -58,12 +66,4 @@ func (le *LuaExtender) Run(r io.Reader) error {
 
 	err = le.luaState.DoString(string(b))
 	return err
-}
-
-func New() *LuaExtender {
-	le := &LuaExtender{}
-
-	le.luaState = lua.NewState()
-	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
-	return le
 }

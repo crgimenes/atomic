@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/crgimenes/atomic/config"
+	"github.com/crgimenes/atomic/luaengine"
 	"github.com/crgimenes/atomic/ssh"
 )
 
@@ -42,7 +43,10 @@ func main() {
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝
 `)
 
-	err = ssh.ListenAndServe()
+	l := luaengine.New()
+	s := ssh.New(l)
+
+	err = s.ListenAndServe()
 	if err != nil {
 		log.Println(err)
 	}

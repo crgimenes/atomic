@@ -12,9 +12,23 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var mux sync.Mutex
+type LuaEngine interface {
+	//	New() LuaEngine
+	Run(r io.Reader) error
+}
 
-func ListenAndServe() error {
+type SSHServer struct {
+	mux sync.Mutex
+	le  LuaEngine
+}
+
+func New(le LuaEngine) *SSHServer {
+	return &SSHServer{
+		le: le,
+	}
+}
+
+func (s *SSHServer) ListenAndServe() error {
 
 	scfg := &ssh.ServerConfig{
 		// TODO: improve authentication (allow key pair authentication, etc.)
@@ -60,18 +74,18 @@ func ListenAndServe() error {
 		// Discard all global out-of-band Requests
 		go ssh.DiscardRequests(reqs)
 		// Accept all channels
-		go handleChannels(chans)
+		go s.handleChannels(chans)
 	}
 }
 
-func handleChannels(chans <-chan ssh.NewChannel) {
+func (s *SSHServer) handleChannels(chans <-chan ssh.NewChannel) {
 	// Service the incoming Channel channel in go routine
 	for newChannel := range chans {
-		go handleChannel(newChannel)
+		go s.handleChannel(newChannel)
 	}
 }
 
-func handleChannel(newChannel ssh.NewChannel) {
+func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 	// Since we're handling a shell, we expect a
 	// channel type of "session". The also describes
 	// "x11", "direct-tcpip" and "forwarded-tcpip"
@@ -107,17 +121,17 @@ func handleChannel(newChannel ssh.NewChannel) {
 			case "pty-req":
 				fmt.Println("pty-req")
 				termLen := req.Payload[3]
-				mux.Lock()
+				s.mux.Lock()
 				tw, th = parseDims(req.Payload[termLen+4:])
 				fmt.Println(tw, th)
-				mux.Unlock()
+				s.mux.Unlock()
 				req.Reply(true, nil)
 			case "window-change":
 				fmt.Println("window-change")
-				mux.Lock()
+				s.mux.Lock()
 				tw, th = parseDims(req.Payload)
 				fmt.Println(tw, th)
-				mux.Unlock()
+				s.mux.Unlock()
 			}
 		}
 	}()
