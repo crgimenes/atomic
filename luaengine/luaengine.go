@@ -23,7 +23,7 @@ func (le *LuaExtender) GetState() *lua.LState {
 	return le.luaState
 }
 
-func (le *LuaExtender) Run(r io.Reader) error {
+func (le *LuaExtender) InitState(r io.Reader) error {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err

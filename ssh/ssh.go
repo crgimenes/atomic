@@ -7,14 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
 
 type LuaEngine interface {
-	//	New() LuaEngine
-	Run(r io.Reader) error
+	InitState(r io.Reader) error
 }
 
 type SSHServer struct {
@@ -106,6 +106,18 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 	}
 
 	var th, tw uint32
+
+	file, err := os.Open("fixtures/init.lua")
+	if err != nil {
+		log.Println("can't open init.lua file", err.Error())
+		os.Exit(1)
+	}
+
+	err = s.le.InitState(file)
+	if err != nil {
+		log.Println("can't open init.lua file", err.Error())
+		os.Exit(1)
+	}
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
