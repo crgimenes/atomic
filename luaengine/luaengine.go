@@ -16,11 +16,23 @@ type LuaExtender struct {
 }
 
 func New() *LuaExtender {
-	le := &LuaExtender{}
+	return &LuaExtender{}
+}
+
+func (le *LuaExtender) GetState() *lua.LState {
+	return le.luaState
+}
+
+func (le *LuaExtender) Run(r io.Reader) error {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
 
 	le.luaState = lua.NewState()
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
-	return le
+	err = le.luaState.DoString(string(b))
+	return err
 }
 
 func pwd() string {
@@ -52,18 +64,4 @@ func (le *LuaExtender) write(w io.Writer, msg string) {
 	if err != nil {
 		fmt.Println("write error:", err)
 	}
-}
-
-func (le *LuaExtender) GetState() *lua.LState {
-	return le.luaState
-}
-
-func (le *LuaExtender) Run(r io.Reader) error {
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-
-	err = le.luaState.DoString(string(b))
-	return err
 }
