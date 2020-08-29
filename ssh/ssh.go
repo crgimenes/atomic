@@ -10,16 +10,18 @@ import (
 	"os"
 	"sync"
 
+	"github.com/crgimenes/atomic/client"
 	"golang.org/x/crypto/ssh"
 )
 
 type LuaEngine interface {
-	InitState(r io.Reader) error
+	InitState(r io.Reader, ci *client.Instance) error
 }
 
 type SSHServer struct {
-	mux sync.Mutex
-	le  LuaEngine
+	mux     sync.Mutex
+	le      LuaEngine
+	clients map[ssh.Channel]*client.Instance
 }
 
 func New(le LuaEngine) *SSHServer {
@@ -105,15 +107,15 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		return
 	}
 
-	var th, tw uint32
-
 	file, err := os.Open("fixtures/init.lua")
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)
 	}
 
-	err = s.le.InitState(file)
+	ci := client.NewInstance(conn)
+
+	err = s.le.InitState(file, ci)
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)
@@ -134,15 +136,13 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 				fmt.Println("pty-req")
 				termLen := req.Payload[3]
 				s.mux.Lock()
-				tw, th = parseDims(req.Payload[termLen+4:])
-				fmt.Println(tw, th)
+				ci.W, ci.H = parseDims(req.Payload[termLen+4:])
 				s.mux.Unlock()
 				req.Reply(true, nil)
 			case "window-change":
 				fmt.Println("window-change")
 				s.mux.Lock()
-				tw, th = parseDims(req.Payload)
-				fmt.Println(tw, th)
+				ci.W, ci.H = parseDims(req.Payload)
 				s.mux.Unlock()
 			}
 		}
@@ -152,11 +152,17 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 	b := make([]byte, 8)
 	for {
 		n, err := conn.Read(b)
+		if err != nil {
+			if err != io.EOF {
+				log.Println(err.Error())
+			}
+			break
+		}
 		fmt.Printf("n = %v err = %v b = %v\n", n, err, b)
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		if b[0] == 'q' {
-			io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", tw, th))
+			io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", ci.W, ci.H))
 			io.WriteString(conn, "*** Bye! ***\r\n")
 			conn.Close()
 			break
@@ -170,8 +176,9 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 			}
 		}
 
-		io.WriteString(conn, string(nb))
-		if err == io.EOF {
+		_, err = io.WriteString(conn, string(nb))
+		if err != nil {
+			log.Println(err.Error())
 			break
 		}
 	}
