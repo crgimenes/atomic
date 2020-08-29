@@ -174,9 +174,18 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		if b[0] == 'q' {
-			io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", ci.W, ci.H)) // #nolint
-			io.WriteString(conn, "*** Bye! ***\r\n")                          // #nolint
-			conn.Close()
+			defer conn.Close()
+
+			_, err = io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", ci.W, ci.H)) // #nolint
+			if err != nil {
+				log.Println(err.Error())
+				break
+			}
+			_, err = io.WriteString(conn, "*** Bye! ***\r\n") // #nolint
+			if err != nil {
+				log.Println(err.Error())
+				break
+			}
 			break
 		}
 
