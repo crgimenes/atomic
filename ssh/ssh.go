@@ -19,9 +19,8 @@ type LuaEngine interface {
 }
 
 type SSHServer struct {
-	mux     sync.Mutex
-	le      LuaEngine
-	clients map[ssh.Channel]*client.Instance
+	mux sync.Mutex
+	le  LuaEngine
 }
 
 func New(le LuaEngine) *SSHServer {
@@ -94,8 +93,11 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 	// channel types.
 	t := newChannel.ChannelType()
 	if t != "session" {
-		newChannel.Reject(ssh.UnknownChannelType,
+		err := newChannel.Reject(ssh.UnknownChannelType,
 			fmt.Sprintf("unknown channel type: %s", t))
+		if err != nil {
+			log.Printf("error unknow channel type (%s)", err)
+		}
 		return
 	}
 
@@ -130,7 +132,10 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 				// We only accept the default shell
 				// (i.e. no command in the Payload)
 				if len(req.Payload) == 0 {
-					req.Reply(true, nil)
+					err = req.Reply(true, nil)
+					if err != nil {
+						log.Println(err.Error())
+					}
 				}
 			case "pty-req":
 				fmt.Println("pty-req")
@@ -138,7 +143,10 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 				s.mux.Lock()
 				ci.W, ci.H = parseDims(req.Payload[termLen+4:])
 				s.mux.Unlock()
-				req.Reply(true, nil)
+				err := req.Reply(true, nil)
+				if err != nil {
+					log.Println(err.Error())
+				}
 			case "window-change":
 				fmt.Println("window-change")
 				s.mux.Lock()
@@ -148,7 +156,11 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		}
 	}()
 
-	io.WriteString(conn, "Welcome banner\r\n")
+	_, err = io.WriteString(conn, "Welcome banner\r\n")
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
 	b := make([]byte, 8)
 	for {
 		n, err := conn.Read(b)
@@ -162,8 +174,8 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		if b[0] == 'q' {
-			io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", ci.W, ci.H))
-			io.WriteString(conn, "*** Bye! ***\r\n")
+			io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", ci.W, ci.H)) // #nolint
+			io.WriteString(conn, "*** Bye! ***\r\n")                          // #nolint
 			conn.Close()
 			break
 		}
