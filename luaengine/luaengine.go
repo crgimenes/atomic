@@ -97,12 +97,3 @@ func fileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
-
-func (le *LuaExtender) write(w io.Writer, msg string) {
-	le.mutex.Lock()
-	_, err := w.Write([]byte(msg))
-	le.mutex.Unlock()
-	if err != nil {
-		fmt.Println("write error:", err)
-	}
-}
