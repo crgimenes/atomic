@@ -175,12 +175,14 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		k := string(b[0])
+		fmt.Println(">>>>>>>>>>>>>", k)
 		err = s.le.RunTriggrer(k)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("error RunTrigger", err.Error())
 			break
 		}
 
+		fmt.Println(">>>>>>>>>>>>> 2")
 		nb := []byte{}
 		for _, c := range b[:n] {
 			nb = append(nb, c)
@@ -195,6 +197,8 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 			break
 		}
 	}
+
+	fmt.Println(">>>>>>>>>>>>> 3")
 }
 
 // parseDims extracts terminal dimensions (width x height) from the provided buffer.
