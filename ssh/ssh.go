@@ -16,7 +16,7 @@ import (
 
 type LuaEngine interface {
 	InitState(r io.Reader, ci *client.Instance) error
-	RunTriggrer(name string) error
+	RunTriggrer(name string) (bool, error)
 }
 
 type SSHServer struct {
@@ -175,30 +175,31 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		k := string(b[0])
-		fmt.Println(">>>>>>>>>>>>>", k)
-		err = s.le.RunTriggrer(k)
+		ok, err := s.le.RunTriggrer(k)
 		if err != nil {
 			log.Println("error RunTrigger", err.Error())
 			break
 		}
+		if ok {
+			continue
+		}
 
-		fmt.Println(">>>>>>>>>>>>> 2")
-		nb := []byte{}
-		for _, c := range b[:n] {
-			nb = append(nb, c)
-			if c == '\r' {
-				nb = append(nb, '\n')
+		if ci.Echo {
+			nb := []byte{}
+			for _, c := range b[:n] {
+				nb = append(nb, c)
+				if c == '\r' {
+					nb = append(nb, '\n')
+				}
+			}
+
+			_, err = io.WriteString(conn, string(nb))
+			if err != nil {
+				log.Println(err.Error())
+				break
 			}
 		}
-
-		_, err = io.WriteString(conn, string(nb))
-		if err != nil {
-			log.Println(err.Error())
-			break
-		}
 	}
-
-	fmt.Println(">>>>>>>>>>>>> 3")
 }
 
 // parseDims extracts terminal dimensions (width x height) from the provided buffer.

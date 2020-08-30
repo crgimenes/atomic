@@ -40,18 +40,19 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
+	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 
 	err = le.luaState.DoString(string(b))
 	return err
 }
 
-func (le *LuaExtender) RunTriggrer(name string) error {
+func (le *LuaExtender) RunTriggrer(name string) (bool, error) {
 	le.mutex.Lock()
 	defer le.mutex.Unlock()
 
 	f, ok := le.triggerList[name]
 	if !ok {
-		return nil
+		return false, nil
 	}
 
 	err := le.luaState.CallByParam(lua.P{
@@ -59,7 +60,13 @@ func (le *LuaExtender) RunTriggrer(name string) error {
 		NRet:    0,     // number of returned values
 		Protect: false, // return err or panic
 	})
-	return err
+	return true, err
+}
+
+func (le *LuaExtender) setEcho(l *lua.LState) int {
+	b := l.ToBool(1)
+	le.ci.Echo = b
+	return 0
 }
 
 func (le *LuaExtender) trigger(l *lua.LState) int {
