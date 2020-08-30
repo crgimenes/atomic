@@ -39,7 +39,7 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
-	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.writeToInstance))
+	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 
 	err = le.luaState.DoString(string(b))
 	return err
@@ -58,7 +58,7 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 	return 1
 }
 
-func (le *LuaExtender) writeToInstance(l *lua.LState) int {
+func (le *LuaExtender) write(l *lua.LState) int {
 	a := l.ToString(1)
 
 	le.mutex.Lock()
