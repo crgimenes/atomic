@@ -12,7 +12,15 @@ function testPrint()
     write("\r\ntest print\r\n")
 end
 
+echo = false
+function toggleEcho() 
+    echo = not echo
+    setEcho(echo)
+end
 
+
+
+trigger("e", toggleEcho)
 trigger("q", exitConnection)
 trigger("a", testPrint)
 

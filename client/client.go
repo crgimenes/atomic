@@ -7,6 +7,7 @@ import (
 type Instance struct {
 	Conn ssh.Channel
 	H, W uint32
+	Echo bool
 }
 
 func NewInstance(conn ssh.Channel) *Instance {
@@ -14,5 +15,6 @@ func NewInstance(conn ssh.Channel) *Instance {
 		Conn: conn,
 		H:    25,
 		W:    80,
+		Echo: false,
 	}
 }
