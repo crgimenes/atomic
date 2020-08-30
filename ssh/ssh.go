@@ -157,11 +157,6 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		}
 	}()
 
-	_, err = io.WriteString(conn, "Welcome banner\r\n")
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
 	b := make([]byte, 8)
 	for {
 		n, err := conn.Read(b)

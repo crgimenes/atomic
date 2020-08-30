@@ -18,6 +18,11 @@ function toggleEcho()
     setEcho(echo)
 end
 
+write("\r\n")
+write("[e] toggle echo on/off\r\n")
+write("[a] print test string\r\n")
+write("[q] quit\r\n")
+write("choose an option\r\n")
 
 
 trigger("e", toggleEcho)
