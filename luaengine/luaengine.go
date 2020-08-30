@@ -78,13 +78,11 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 func (le *LuaExtender) write(l *lua.LState) int {
 	a := l.ToString(1)
 
-	le.mutex.Lock()
-	defer le.mutex.Unlock()
-
 	_, err := io.WriteString(le.ci.Conn, a)
 	if err != nil {
 		log.Println(err.Error())
 	}
+
 	return 0
 }
 
