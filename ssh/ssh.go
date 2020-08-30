@@ -16,6 +16,7 @@ import (
 
 type LuaEngine interface {
 	InitState(r io.Reader, ci *client.Instance) error
+	RunTriggrer(name string) error
 }
 
 type SSHServer struct {
@@ -173,19 +174,10 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		fmt.Printf("n = %v err = %v b = %v\n", n, err, b)
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
-		if b[0] == 'q' {
-			defer conn.Close()
-
-			_, err = io.WriteString(conn, fmt.Sprintf("w: %v, h: %v\r\n", ci.W, ci.H)) // #nolint
-			if err != nil {
-				log.Println(err.Error())
-				break
-			}
-			_, err = io.WriteString(conn, "*** Bye! ***\r\n") // #nolint
-			if err != nil {
-				log.Println(err.Error())
-				break
-			}
+		k := string(b[0])
+		err = s.le.RunTriggrer(k)
+		if err != nil {
+			log.Println(err.Error())
 			break
 		}
 

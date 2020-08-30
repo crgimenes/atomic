@@ -45,6 +45,23 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	return err
 }
 
+func (le *LuaExtender) RunTriggrer(name string) error {
+	le.mutex.Lock()
+	defer le.mutex.Unlock()
+
+	f, ok := le.triggerList[name]
+	if !ok {
+		return nil
+	}
+
+	err := le.luaState.CallByParam(lua.P{
+		Fn:      f,     // Lua function
+		NRet:    0,     // number of returned values
+		Protect: false, // return err or panic
+	})
+	return err
+}
+
 func (le *LuaExtender) trigger(l *lua.LState) int {
 	a := l.ToString(1)
 	f := l.ToFunction(2)
