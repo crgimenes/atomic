@@ -18,7 +18,7 @@ function toggleEcho()
     setEcho(echo)
 end
 
-write("\r\n")
+clear()
 write("[e] toggle echo on/off\r\n")
 write("[a] print test string\r\n")
 write("[q] quit\r\n")

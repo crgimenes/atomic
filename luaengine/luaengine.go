@@ -40,6 +40,7 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
+	le.luaState.SetGlobal("clear", le.luaState.NewFunction(le.clear))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 
 	err = le.luaState.DoString(string(b))
@@ -80,6 +81,14 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 	res := lua.LString(a)
 	l.Push(res)
 	return 1
+}
+
+func (le *LuaExtender) clear(l *lua.LState) int {
+	_, err := io.WriteString(le.ci.Conn, "\033c")
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return 0
 }
 
 func (le *LuaExtender) write(l *lua.LState) int {
