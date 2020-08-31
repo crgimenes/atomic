@@ -18,7 +18,8 @@ function toggleEcho()
     setEcho(echo)
 end
 
-clear()
+setANSI(1,4,31)
+cls()
 write("[e] toggle echo on/off\r\n")
 write("[a] print test string\r\n")
 write("[q] quit\r\n")

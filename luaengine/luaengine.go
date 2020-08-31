@@ -40,7 +40,9 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
-	le.luaState.SetGlobal("clear", le.luaState.NewFunction(le.clear))
+	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
+	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
+	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 
 	err = le.luaState.DoString(string(b))
@@ -83,8 +85,34 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 	return 1
 }
 
-func (le *LuaExtender) clear(l *lua.LState) int {
-	_, err := io.WriteString(le.ci.Conn, "\033c")
+func (le *LuaExtender) setANSI(l *lua.LState) int {
+
+	s := "\u001b["
+	for i := 1; i <= l.GetTop(); i++ {
+		v := l.Get(i).String()
+		if i > 1 {
+			s = s + ";"
+		}
+		s = s + v
+	}
+	s = s + "m"
+	_, err := io.WriteString(le.ci.Conn, s)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return 0
+}
+
+func (le *LuaExtender) resetScreen(l *lua.LState) int {
+	_, err := io.WriteString(le.ci.Conn, "\u001bc")
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return 0
+}
+
+func (le *LuaExtender) cls(l *lua.LState) int {
+	_, err := io.WriteString(le.ci.Conn, "\u001b[2J")
 	if err != nil {
 		log.Println(err.Error())
 	}
