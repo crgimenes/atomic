@@ -8,7 +8,7 @@ import (
 
 	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/luaengine"
-	"github.com/crgimenes/atomic/ssh"
+	"github.com/crgimenes/atomic/server"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 `)
 
 	l := luaengine.New()
-	s := ssh.New(l)
+	s := server.New(l)
 
 	err = s.ListenAndServe()
 	if err != nil {

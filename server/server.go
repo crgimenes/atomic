@@ -1,4 +1,4 @@
-package ssh
+package server
 
 import (
 	"encoding/binary"
