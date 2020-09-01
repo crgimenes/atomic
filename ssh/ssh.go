@@ -169,7 +169,7 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		fmt.Printf("n = %v err = %v b = %v\n", n, err, b)
 		fmt.Printf("b[:n] = %q\n", b[:n])
 
-		k := string(b[0])
+		k := string(b[:n])
 		ok, err := s.le.RunTriggrer(k)
 		if err != nil {
 			log.Println("error RunTrigger", err.Error())
