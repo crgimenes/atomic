@@ -179,22 +179,6 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		}
 
 		s.le.Input(string(b[:n]))
-
-		if ci.Echo {
-			nb := []byte{}
-			for _, c := range b[:n] {
-				nb = append(nb, c)
-				if c == '\r' {
-					nb = append(nb, '\n')
-				}
-			}
-
-			_, err = io.WriteString(conn, string(nb))
-			if err != nil {
-				log.Println(err.Error())
-				break
-			}
-		}
 	}
 }
 

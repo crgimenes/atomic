@@ -51,8 +51,18 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	return err
 }
 
-func (le *LuaExtender) Input(c string) {
-	fmt.Println("input func :", c)
+func (le *LuaExtender) Input(s string) {
+	if le.ci.Echo {
+		le.writeString(s)
+	}
+	fmt.Printf("input: %q\n", s)
+}
+
+func (le *LuaExtender) writeString(s string) {
+	_, err := io.WriteString(le.ci.Conn, s)
+	if err != nil {
+		log.Println(err.Error())
+	}
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {
