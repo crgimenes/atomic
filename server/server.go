@@ -16,6 +16,7 @@ import (
 
 type LuaEngine interface {
 	InitState(r io.Reader, ci *client.Instance) error
+	Input(c string)
 	RunTriggrer(name string) (bool, error)
 }
 
@@ -166,8 +167,6 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 			}
 			break
 		}
-		fmt.Printf("n = %v err = %v b = %v\n", n, err, b)
-		fmt.Printf("b[:n] = %q\n", b[:n])
 
 		k := string(b[:n])
 		ok, err := s.le.RunTriggrer(k)
@@ -178,6 +177,8 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		if ok {
 			continue
 		}
+
+		s.le.Input(string(b[:n]))
 
 		if ci.Echo {
 			nb := []byte{}

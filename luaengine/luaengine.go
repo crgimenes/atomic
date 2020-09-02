@@ -17,6 +17,7 @@ type LuaExtender struct {
 	luaState    *lua.LState
 	triggerList map[string]*lua.LFunction
 	ci          *client.Instance
+	inputChan   *chan string
 }
 
 func New() *LuaExtender {
@@ -44,9 +45,18 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
 	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
+	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
 
 	err = le.luaState.DoString(string(b))
 	return err
+}
+
+func (le *LuaExtender) Input(c string) {
+	fmt.Println("input func :", c)
+}
+
+func (le *LuaExtender) getField(l *lua.LState) int {
+	return 0
 }
 
 func (le *LuaExtender) RunTriggrer(name string) (bool, error) {
