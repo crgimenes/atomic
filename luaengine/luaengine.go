@@ -17,7 +17,6 @@ type LuaExtender struct {
 	luaState    *lua.LState
 	triggerList map[string]*lua.LFunction
 	ci          *client.Instance
-	inputChan   *chan string
 }
 
 func New() *LuaExtender {
