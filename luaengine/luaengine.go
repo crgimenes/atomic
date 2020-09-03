@@ -115,37 +115,23 @@ func (le *LuaExtender) setANSI(l *lua.LState) int {
 		s = s + v
 	}
 	s = s + "m"
-	_, err := io.WriteString(le.ci.Conn, s)
-	if err != nil {
-		log.Println(err.Error())
-	}
+	le.writeString(s)
 	return 0
 }
 
 func (le *LuaExtender) resetScreen(l *lua.LState) int {
-	_, err := io.WriteString(le.ci.Conn, "\u001bc")
-	if err != nil {
-		log.Println(err.Error())
-	}
+	le.writeString("\u001bc")
 	return 0
 }
 
 func (le *LuaExtender) cls(l *lua.LState) int {
-	_, err := io.WriteString(le.ci.Conn, "\u001b[2J")
-	if err != nil {
-		log.Println(err.Error())
-	}
+	le.writeString("\u001b[2J")
 	return 0
 }
 
 func (le *LuaExtender) write(l *lua.LState) int {
-	a := l.ToString(1)
-
-	_, err := io.WriteString(le.ci.Conn, a)
-	if err != nil {
-		log.Println(err.Error())
-	}
-
+	s := l.ToString(1)
+	le.writeString(s)
 	return 0
 }
 
