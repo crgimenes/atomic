@@ -13,14 +13,32 @@ import (
 )
 
 type LuaExtender struct {
-	mutex       sync.RWMutex
-	luaState    *lua.LState
-	triggerList map[string]*lua.LFunction
-	ci          *client.Instance
+	mutex        sync.RWMutex
+	luaState     *lua.LState
+	triggerList  map[string]*lua.LFunction
+	ci           *client.Instance
+	captureInput bool
+	echo         bool
+	inputField   string
+	inputTrigger chan struct{}
 }
 
 func New() *LuaExtender {
-	return &LuaExtender{}
+	le := &LuaExtender{}
+	le.triggerList = make(map[string]*lua.LFunction)
+	le.inputTrigger = make(chan struct{})
+	le.luaState = lua.NewState()
+	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
+	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
+	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
+	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
+	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
+	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
+	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
+	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
+	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
+
+	return le
 }
 
 func (le *LuaExtender) GetState() *lua.LState {
@@ -33,27 +51,24 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	if err != nil {
 		return err
 	}
-	le.triggerList = make(map[string]*lua.LFunction)
-
-	le.luaState = lua.NewState()
-	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
-	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
-	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
-	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
-	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
-	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
-	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
-	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
-	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
-
 	err = le.luaState.DoString(string(b))
 	return err
 }
 
 func (le *LuaExtender) Input(s string) {
-	if le.ci.Echo {
+	if le.echo {
 		le.writeString(s)
 	}
+	if s == "\r" {
+		if le.captureInput {
+			le.captureInput = false
+			le.inputTrigger <- struct{}{}
+		}
+	}
+	if le.captureInput {
+		le.inputField += s
+	}
+
 	fmt.Printf("input: %q\n", s)
 }
 
@@ -65,7 +80,17 @@ func (le *LuaExtender) writeString(s string) {
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {
-	return 0
+	le.echo = true
+	le.captureInput = true
+	le.inputField = ""
+
+	<-le.inputTrigger
+
+	res := lua.LString(le.inputField)
+	le.inputField = ""
+	le.echo = false
+	l.Push(res)
+	return 1
 }
 
 func (le *LuaExtender) RunTriggrer(name string) (bool, error) {
@@ -87,7 +112,7 @@ func (le *LuaExtender) RunTriggrer(name string) (bool, error) {
 
 func (le *LuaExtender) setEcho(l *lua.LState) int {
 	b := l.ToBool(1)
-	le.ci.Echo = b
+	le.echo = b
 	return 0
 }
 
@@ -110,11 +135,11 @@ func (le *LuaExtender) setANSI(l *lua.LState) int {
 	for i := 1; i <= l.GetTop(); i++ {
 		v := l.Get(i).String()
 		if i > 1 {
-			s = s + ";"
+			s += ";"
 		}
-		s = s + v
+		s += v
 	}
-	s = s + "m"
+	s += "m"
 	le.writeString(s)
 	return 0
 }

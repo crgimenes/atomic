@@ -119,12 +119,6 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 
 	ci := client.NewInstance(conn)
 
-	err = s.le.InitState(file, ci)
-	if err != nil {
-		log.Println("can't open init.lua file", err.Error())
-		os.Exit(1)
-	}
-
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
 		for req := range requests {
@@ -157,26 +151,31 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 			}
 		}
 	}()
-
-	b := make([]byte, 8)
-	for {
-		n, err := conn.Read(b)
-		if err != nil {
-			if err != io.EOF {
-				log.Println(err.Error())
+	go func() {
+		b := make([]byte, 8)
+		for {
+			n, err := conn.Read(b)
+			if err != nil {
+				if err != io.EOF {
+					log.Println(err.Error())
+				}
+				break
 			}
-			break
+			k := string(b[:n])
+			ok, err := s.le.RunTriggrer(k)
+			if err != nil {
+				log.Println("error RunTrigger", err.Error())
+				break
+			}
+			if !ok {
+				s.le.Input(string(b[:n]))
+			}
 		}
-
-		k := string(b[:n])
-		ok, err := s.le.RunTriggrer(k)
-		if err != nil {
-			log.Println("error RunTrigger", err.Error())
-			break
-		}
-		if !ok {
-			s.le.Input(string(b[:n]))
-		}
+	}()
+	err = s.le.InitState(file, ci)
+	if err != nil {
+		log.Println("can't open init.lua file", err.Error())
+		os.Exit(1)
 	}
 }
 

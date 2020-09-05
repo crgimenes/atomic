@@ -29,14 +29,18 @@ function toggleEcho()
 end
 
 setANSI(1,4,31)
-write("[e] toggle echo on/off\r\n")
-write("[a] print test string\r\n")
-write("[q] quit\r\n")
+write("[1] toggle echo on/off\r\n")
+write("[2] print test string\r\n")
+write("[3] quit\r\n")
 write("choose an option\r\n")
 
 
-trigger("e", toggleEcho)
-trigger("q", exitConnection)
-trigger("a", testPrint)
+trigger("1", toggleEcho)
+trigger("2", testPrint)
+trigger("3", exitConnection)
+
+write("enter a string:")
+str = getField()
+write(str)
 
 -- quit()
