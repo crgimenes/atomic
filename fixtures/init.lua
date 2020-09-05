@@ -9,7 +9,7 @@ end
 
 function testPrint()
     print("testPrint")
-    write("\r\ntest print\r\n")
+    write("\r\ntest print àáéíóúü~ãõç\r\n")
 end
 
 echo = false
