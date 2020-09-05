@@ -174,11 +174,9 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 			log.Println("error RunTrigger", err.Error())
 			break
 		}
-		if ok {
-			continue
+		if !ok {
+			s.le.Input(string(b[:n]))
 		}
-
-		s.le.Input(string(b[:n]))
 	}
 }
 
