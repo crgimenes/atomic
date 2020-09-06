@@ -1,6 +1,7 @@
 package luaengine
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/crgimenes/atomic/charset"
 	"github.com/crgimenes/atomic/client"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -37,6 +39,7 @@ func New() *LuaExtender {
 	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
+	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 
 	return le
 }
@@ -57,6 +60,9 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 
 func (le *LuaExtender) Input(s string) {
 	if le.echo {
+		if s[0] == '\x1b' {
+			return
+		}
 		le.writeString(s)
 	}
 	if s == "\r" {
@@ -141,6 +147,24 @@ func (le *LuaExtender) setANSI(l *lua.LState) int {
 	}
 	s += "m"
 	le.writeString(s)
+	return 0
+}
+
+func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
+	fileName := l.ToString(1)
+	f, err := os.Open(fileName) // For read access.
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	r := bufio.NewReader(f)
+	for {
+		b, err := r.ReadByte()
+		if err == io.EOF {
+			break
+		}
+		le.writeString(string(charset.ASCII[b]))
+	}
 	return 0
 }
 
