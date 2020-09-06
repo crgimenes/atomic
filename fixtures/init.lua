@@ -10,6 +10,9 @@ write(" ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═�
 write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
 
+
+writeFromASCII("nonfree/squiddy.ans")
+
 str = ""
 
 function exitConnection()
