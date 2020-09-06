@@ -10,6 +10,7 @@ write(" ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═�
 write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
 
+str = ""
 
 function exitConnection()
     print("quit user")
@@ -20,6 +21,9 @@ end
 function testPrint()
     print("testPrint")
     write("\r\ntest print àáéíóúü~ãõç\r\n")
+    write("str: ")
+    write(str)
+    write("\r\n")
 end
 
 echo = false
