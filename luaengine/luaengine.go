@@ -58,24 +58,40 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	return err
 }
 
+func removeLastRune(s string) string {
+	r := []rune(s)
+	n := len(r) - 1
+	if n < 0 {
+		n = 0
+	}
+	return string(r[:n])
+}
+
 func (le *LuaExtender) Input(s string) {
+	fmt.Printf("input: %q\n", s)
 	if le.echo {
 		if s[0] == '\x1b' {
 			return
 		}
 		le.writeString(s)
 	}
-	if s == "\r" {
-		if le.captureInput {
+	if le.captureInput {
+		switch s[0] {
+		case '\u007f':
+			fallthrough
+		case '\b':
+			if len(le.inputField) == 0 {
+				return
+			}
+			le.writeString("\b \b")
+			le.inputField = removeLastRune(le.inputField)
+		case '\r':
 			le.captureInput = false
 			le.inputTrigger <- struct{}{}
+		default:
+			le.inputField += s
 		}
 	}
-	if le.captureInput {
-		le.inputField += s
-	}
-
-	fmt.Printf("input: %q\n", s)
 }
 
 func (le *LuaExtender) writeString(s string) {

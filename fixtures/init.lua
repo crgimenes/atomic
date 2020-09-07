@@ -48,6 +48,7 @@ trigger("3", exitConnection)
 
 write("enter a string:")
 str = getField()
+write("\n\n\n\r\n")
 write(str)
-
+write("\n\n\n\r\n")
 -- quit()
