@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/crgimenes/atomic/client"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type mockRead struct {
@@ -48,12 +49,27 @@ func TestRunErrorReader(t *testing.T) {
 }
 
 func TestFileExists(t *testing.T) {
-	file, err := ioutil.TempFile("", "ehsim")
+	file, err := ioutil.TempFile("", "file_not_exists")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(file.Name())
 	if !fileExists(file.Name()) {
 		t.Fatalf("expected tmp file to exists")
+	}
+}
+
+func TestRunPwd(t *testing.T) {
+	l := New()
+	c := client.NewInstance(nil)
+	s := strings.NewReader(`pwdStr = pwd()`)
+	err := l.InitState(s, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	L := l.GetState()
+	resp := L.GetGlobal("pwdStr").(lua.LString).String()
+	if resp != pwd() {
+		t.Fatalf("expect %q but got %q", resp, pwd())
 	}
 }

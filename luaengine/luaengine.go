@@ -182,7 +182,7 @@ func (le *LuaExtender) setANSI(l *lua.LState) int {
 
 func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
 	fileName := l.ToString(1)
-	f, err := os.Open(fileName) // For read access.
+	f, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -192,6 +192,9 @@ func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
 		b, err := r.ReadByte()
 		if err == io.EOF {
 			break
+		}
+		if err != nil {
+			log.Fatal(err)
 		}
 		le.writeString(string(charset.ASCII[b]))
 	}
