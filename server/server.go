@@ -31,7 +31,16 @@ func New(le LuaEngine) *SSHServer {
 	}
 }
 
-func (s *SSHServer) ListenAndServe() error {
+func newServerConfig() (*ssh.ServerConfig, error) {
+	b, err := ioutil.ReadFile("id_rsa")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load private key, %v", err.Error())
+	}
+
+	pk, err := ssh.ParsePrivateKey(b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key, %v", err.Error())
+	}
 
 	scfg := &ssh.ServerConfig{
 		// TODO: improve authentication (allow key pair authentication, etc.)
@@ -39,22 +48,22 @@ func (s *SSHServer) ListenAndServe() error {
 		// The BBS system will authenticate the user in another step that is
 		// more lime the old BBS systems and also allow guest access.
 	}
-
-	b, err := ioutil.ReadFile("id_rsa")
-	if err != nil {
-		return fmt.Errorf("failed to load private key, %v", err.Error())
-	}
-
-	pk, err := ssh.ParsePrivateKey(b)
-	if err != nil {
-		return fmt.Errorf("failed to parse private key, %v", err.Error())
-	}
-
 	scfg.AddHostKey(pk)
+
+	return scfg, nil
+
+}
+
+func (s *SSHServer) ListenAndServe() error {
 
 	l, err := net.Listen("tcp", "0.0.0.0:2200")
 	if err != nil {
 		return fmt.Errorf("failed to listen on 2200, %v", err.Error())
+	}
+
+	scfg, err := newServerConfig()
+	if err != nil {
+		return err
 	}
 
 	log.Print("listening at 0.0.0.0:2200")
