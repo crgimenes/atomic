@@ -49,7 +49,7 @@ func TestRunErrorReader(t *testing.T) {
 }
 
 func TestFileExists(t *testing.T) {
-	file, err := ioutil.TempFile("", "file_not_exists")
+	file, err := ioutil.TempFile("", "file")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,6 +57,10 @@ func TestFileExists(t *testing.T) {
 	if !fileExists(file.Name()) {
 		t.Fatalf("expected tmp file to exists")
 	}
+	if fileExists("file-not-exists") {
+		t.Fatalf("expected file to exists")
+	}
+
 }
 
 func TestRunPwd(t *testing.T) {
