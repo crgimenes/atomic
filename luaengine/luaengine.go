@@ -33,12 +33,13 @@ func New() *LuaExtender {
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
-	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
-	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
 	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
+	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
+	le.luaState.SetGlobal("getPassword", le.luaState.NewFunction(le.getPassword))
+	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 
 	return le
@@ -111,6 +112,19 @@ func (le *LuaExtender) getField(l *lua.LState) int {
 	res := lua.LString(le.inputField)
 	le.inputField = ""
 	le.echo = false
+	l.Push(res)
+	return 1
+}
+
+func (le *LuaExtender) getPassword(l *lua.LState) int {
+	le.echo = false
+	le.captureInput = true
+	le.inputField = ""
+
+	<-le.inputTrigger
+
+	res := lua.LString(le.inputField)
+	le.inputField = ""
 	l.Push(res)
 	return 1
 }
