@@ -14,6 +14,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+// LuaExtender holds an instance of the moon interpreter and the state variables of the extensions we made.
 type LuaExtender struct {
 	mutex        sync.RWMutex
 	luaState     *lua.LState
@@ -25,6 +26,7 @@ type LuaExtender struct {
 	inputTrigger chan struct{}
 }
 
+// New creates a new instance of LuaExtender
 func New() *LuaExtender {
 	le := &LuaExtender{}
 	le.triggerList = make(map[string]*lua.LFunction)
@@ -45,10 +47,12 @@ func New() *LuaExtender {
 	return le
 }
 
+// GetState returns the state of the moon interpreter
 func (le *LuaExtender) GetState() *lua.LState {
 	return le.luaState
 }
 
+// InitState starts the lua interpreter with a script
 func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.ci = ci
 	b, err := ioutil.ReadAll(r)
@@ -68,6 +72,7 @@ func removeLastRune(s string) string {
 	return string(r[:n])
 }
 
+// Input receives user input and interprets depending on the state of the engine.
 func (le *LuaExtender) Input(s string) {
 	fmt.Printf("input: %q\n", s)
 	if le.echo {
@@ -129,7 +134,8 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 	return 1
 }
 
-func (le *LuaExtender) RunTriggrer(name string) (bool, error) {
+// RunTrigger executes a pre-configured trigger
+func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 	le.mutex.Lock()
 	defer le.mutex.Unlock()
 

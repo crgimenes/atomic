@@ -17,7 +17,7 @@ import (
 type LuaEngine interface {
 	InitState(r io.Reader, ci *client.Instance) error
 	Input(c string)
-	RunTriggrer(name string) (bool, error)
+	RunTrigger(name string) (bool, error)
 }
 
 type SSHServer struct {
@@ -171,7 +171,7 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 				break
 			}
 			k := string(b[:n])
-			ok, err := s.le.RunTriggrer(k)
+			ok, err := s.le.RunTrigger(k)
 			if err != nil {
 				log.Println("error RunTrigger", err.Error())
 				break
