@@ -14,5 +14,5 @@
 .glide/
 
 nonfree
-
+.vscode
 id_rsa*
