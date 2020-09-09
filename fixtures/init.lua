@@ -13,15 +13,15 @@ write("██  ██  ██  ██  ██  ██  ██  ██  ██  �
 
 writeFromASCII("nonfree/squiddy.ans")
 
-str = ""
+Str = ""
 
-function exitConnection()
+function ExitConnection()
     print("quit user")
     write("\r\nbye!\r\n")
     quit()
 end
 
-function testPrint()
+function TestPrint()
     print("testPrint")
     write("\r\ntest print àáéíóúü~ãõç\r\n")
     write("str: ")
@@ -29,10 +29,10 @@ function testPrint()
     write("\r\n")
 end
 
-echo = false
-function toggleEcho() 
-    echo = not echo
-    setEcho(echo)
+Echo = false
+function ToggleEcho()
+    Echo = not Echo
+    setEcho(Echo)
 end
 
 setANSI(1,4,31)
@@ -42,9 +42,9 @@ write("[3] quit\r\n")
 write("choose an option\r\n")
 
 
-trigger("1", toggleEcho)
-trigger("2", testPrint)
-trigger("3", exitConnection)
+trigger("1", ToggleEcho)
+trigger("2", TestPrint)
+trigger("3", ExitConnection)
 
 write("enter a string:")
 str = getField()
