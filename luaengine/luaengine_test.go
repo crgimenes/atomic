@@ -20,6 +20,7 @@ func (m *mockRead) Read(p []byte) (n int, err error) {
 }
 
 type mockConn struct {
+	closed bool
 }
 
 func (m *mockConn) Read(data []byte) (int, error) {
@@ -31,10 +32,12 @@ func (m *mockConn) Write(data []byte) (int, error) {
 }
 
 func (m *mockConn) Close() error {
+	m.closed = true
 	return nil
 }
 
 func (m *mockConn) CloseWrite() error {
+	m.closed = true
 	return nil
 }
 
@@ -103,5 +106,21 @@ func TestRunPwd(t *testing.T) {
 	resp := L.GetGlobal("pwdStr").(lua.LString).String()
 	if resp != pwd() {
 		t.Fatalf("expect %q but got %q", resp, pwd())
+	}
+}
+
+func TestQuit(t *testing.T) {
+	l := New()
+	s := strings.NewReader(`quit()`)
+	m := &mockConn{}
+	c := &client.Instance{
+		Conn: m,
+	}
+	err := l.InitState(s, c)
+	if err != nil {
+		t.Fatal("running quit() function", err)
+	}
+	if !m.closed {
+		t.Fatal("quit() function did not close the connection")
 	}
 }
