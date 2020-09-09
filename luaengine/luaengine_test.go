@@ -21,6 +21,7 @@ func (m *mockRead) Read(p []byte) (n int, err error) {
 
 type mockConn struct {
 	closed bool
+	data   []byte
 }
 
 func (m *mockConn) Read(data []byte) (int, error) {
@@ -28,6 +29,7 @@ func (m *mockConn) Read(data []byte) (int, error) {
 }
 
 func (m *mockConn) Write(data []byte) (int, error) {
+	m.data = data
 	return 0, nil
 }
 
@@ -122,5 +124,21 @@ func TestQuit(t *testing.T) {
 	}
 	if !m.closed {
 		t.Fatal("quit() function did not close the connection")
+	}
+}
+
+func TestWrite(t *testing.T) {
+	l := New()
+	s := strings.NewReader(`write("test")`)
+	m := &mockConn{}
+	c := &client.Instance{
+		Conn: m,
+	}
+	err := l.InitState(s, c)
+	if err != nil {
+		t.Fatal("running write() function", err)
+	}
+	if string(m.data) != "test" {
+		t.Fatal("error on write() function")
 	}
 }
