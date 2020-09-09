@@ -2,6 +2,7 @@ package luaengine
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -16,6 +17,33 @@ type mockRead struct {
 
 func (m *mockRead) Read(p []byte) (n int, err error) {
 	return 0, errors.New("mock error Read")
+}
+
+type mockConn struct {
+}
+
+func (m *mockConn) Read(data []byte) (int, error) {
+	return 0, nil
+}
+
+func (m *mockConn) Write(data []byte) (int, error) {
+	return 0, nil
+}
+
+func (m *mockConn) Close() error {
+	return nil
+}
+
+func (m *mockConn) CloseWrite() error {
+	return nil
+}
+
+func (m *mockConn) SendRequest(name string, wantReply bool, payload []byte) (bool, error) {
+	return false, nil
+}
+
+func (m *mockConn) Stderr() io.ReadWriter {
+	return nil
 }
 
 func TestRun(t *testing.T) {
