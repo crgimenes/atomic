@@ -142,3 +142,35 @@ func TestWrite(t *testing.T) {
 		t.Fatal("error on write() function")
 	}
 }
+
+func TestCls(t *testing.T) {
+	l := New()
+	s := strings.NewReader(`cls()`)
+	m := &mockConn{}
+	c := &client.Instance{
+		Conn: m,
+	}
+	err := l.InitState(s, c)
+	if err != nil {
+		t.Fatal("running cls() function", err)
+	}
+	if string(m.data) != "\u001b[2J" {
+		t.Fatal("error on cls() function")
+	}
+}
+
+func TestResetScreen(t *testing.T) {
+	l := New()
+	s := strings.NewReader(`resetScreen()`)
+	m := &mockConn{}
+	c := &client.Instance{
+		Conn: m,
+	}
+	err := l.InitState(s, c)
+	if err != nil {
+		t.Fatal("running resetScreen() function", err)
+	}
+	if string(m.data) != "\u001bc" {
+		t.Fatal("error on resetScreen() function")
+	}
+}
