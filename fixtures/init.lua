@@ -24,8 +24,8 @@ end
 function TestPrint()
     print("testPrint")
     write("\r\ntest print àáéíóúü~ãõç\r\n")
-    write("str: ")
-    write(str)
+    write("Str: ")
+    write(Str)
     write("\r\n")
 end
 
@@ -47,8 +47,8 @@ trigger("2", TestPrint)
 trigger("3", ExitConnection)
 
 write("enter a string:")
-str = getField()
+Str = getField()
 write("\n\n\n\r\n")
-write(str)
+write(Str)
 write("\n\n\n\r\n")
 -- quit()

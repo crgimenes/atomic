@@ -2,6 +2,7 @@ package luaengine
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,8 +30,8 @@ func (m *mockConn) Read(data []byte) (int, error) {
 }
 
 func (m *mockConn) Write(data []byte) (int, error) {
-	m.data = data
-	return 0, nil
+	m.data = append(m.data, data...)
+	return len(data), nil
 }
 
 func (m *mockConn) Close() error {
@@ -172,5 +173,28 @@ func TestResetScreen(t *testing.T) {
 	}
 	if string(m.data) != "\u001bc" {
 		t.Fatal("error on resetScreen() function")
+	}
+}
+
+func TestWriteFromASCII(t *testing.T) {
+	file, err := ioutil.TempFile("", "temp_file")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+	_, err = file.Write([]byte{'a', '\xDB', '\xDC', '\xDD', 'b'})
+
+	l := New()
+	s := strings.NewReader(fmt.Sprintf("writeFromASCII(%q)", file.Name()))
+	m := &mockConn{}
+	c := &client.Instance{
+		Conn: m,
+	}
+	err = l.InitState(s, c)
+	if err != nil {
+		t.Fatal("running writeFromASCII() function", err)
+	}
+	if string(m.data) != "a█▄▌b" {
+		t.Fatal("error on writeFromASCII() function")
 	}
 }
