@@ -183,6 +183,9 @@ func TestWriteFromASCII(t *testing.T) {
 	}
 	defer os.Remove(file.Name())
 	_, err = file.Write([]byte{'a', '\xDB', '\xDC', '\xDD', 'b'})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	l := New()
 	s := strings.NewReader(fmt.Sprintf("writeFromASCII(%q)", file.Name()))
