@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/crgimenes/goconfig"
+	"github.com/gosidekick/goconfig"
 )
 
 type Config struct {
