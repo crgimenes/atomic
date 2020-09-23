@@ -11,6 +11,11 @@ type Term struct {
 	C io.Writer
 }
 
+func (t *Term) Clear() error {
+	_, err := io.WriteString(t.C, "\u001b[2J")
+	return err
+}
+
 func (t *Term) Print(lin, col int, s string) error {
 	c := t.W + 1 - col
 	l := len([]rune(s))
