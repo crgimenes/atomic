@@ -1,8 +1,8 @@
 package term
 
 import (
-	"fmt"
 	"io"
+	"strconv"
 )
 
 type Term struct {
@@ -16,17 +16,24 @@ func (t *Term) Clear() error {
 	return err
 }
 
-func (t *Term) Print(lin, col int, s string) error {
+func (t *Term) Print(lin, col int, s string) {
 	c := t.W + 1 - col
 	l := len([]rune(s))
 	if c > l {
 		c = l
 	}
 	if c <= 0 {
-		return nil
+		return
 	}
+
+	w := t.C
 	s = string([]rune(s)[:c])
-	f := fmt.Sprintf("\u001b[%d;%df", lin, col)
-	_, err := io.WriteString(t.C, f+s)
-	return err
+
+	w.Write([]byte("\u001b["))
+	w.Write([]byte(strconv.Itoa(lin)))
+	w.Write([]byte{';'})
+	w.Write([]byte(strconv.Itoa(col)))
+	w.Write([]byte{'f'})
+	w.Write([]byte(s))
+	return
 }
