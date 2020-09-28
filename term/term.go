@@ -85,7 +85,6 @@ func (t *Term) Print(lin, col int, s string) error {
 
 // Input receives user input and interprets depending on the state of the engine.
 func (t *Term) Input(s string) {
-	fmt.Printf("input: %q\n", s)
 	if t.echo {
 		if s[0] == '\x1b' {
 			return
@@ -103,6 +102,7 @@ func (t *Term) Input(s string) {
 			t.WriteString("\b \b")
 			t.inputField = removeLastRune(t.inputField)
 		case '\r':
+			fmt.Println(">>>>>>>>>>>>>>>>>>>", t.inputField)
 			t.captureInput = false
 			t.inputTrigger <- struct{}{}
 		default:
