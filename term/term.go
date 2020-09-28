@@ -2,7 +2,6 @@ package term
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -102,7 +101,6 @@ func (t *Term) Input(s string) {
 			t.WriteString("\b \b")
 			t.inputField = removeLastRune(t.inputField)
 		case '\r':
-			fmt.Println(">>>>>>>>>>>>>>>>>>>", t.inputField)
 			t.captureInput = false
 			t.inputTrigger <- struct{}{}
 		default:
@@ -111,9 +109,16 @@ func (t *Term) Input(s string) {
 	}
 }
 
-func (t *Term) setANSI() int {
+func (t *Term) setANSI(v ...string) int {
 
-	s := "\u001b["
+	t.WriteString("\u001b[")
+	for k, c := range v {
+		if k > 0 {
+			t.WriteString(";")
+		}
+		t.WriteString(c)
+	}
+
 	/*
 		for i := 1; i <= t.GetTop(); i++ {
 			v := t.Get(i).String()
@@ -123,8 +128,7 @@ func (t *Term) setANSI() int {
 			s += v
 		}
 	*/
-	s += "m"
-	t.WriteString(s)
+	t.WriteString("m")
 	return 0
 }
 
