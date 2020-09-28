@@ -1,42 +1,35 @@
 package luaengine
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"sync"
 
-	"github.com/crgimenes/atomic/charset"
 	"github.com/crgimenes/atomic/client"
+	"github.com/crgimenes/atomic/term"
 	lua "github.com/yuin/gopher-lua"
 )
 
 // LuaExtender holds an instance of the moon interpreter and the state variables of the extensions we made.
 type LuaExtender struct {
-	mutex        sync.RWMutex
-	luaState     *lua.LState
-	triggerList  map[string]*lua.LFunction
-	ci           *client.Instance
-	captureInput bool
-	echo         bool
-	inputField   string
-	inputTrigger chan struct{}
+	Term        term.Term
+	mutex       sync.RWMutex
+	luaState    *lua.LState
+	triggerList map[string]*lua.LFunction
+	ci          *client.Instance
 }
 
 // New creates a new instance of LuaExtender
 func New() *LuaExtender {
 	le := &LuaExtender{}
 	le.triggerList = make(map[string]*lua.LFunction)
-	le.inputTrigger = make(chan struct{})
 	le.luaState = lua.NewState()
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
-	le.luaState.SetGlobal("resetScreen", le.luaState.NewFunction(le.resetScreen))
 	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
@@ -47,9 +40,30 @@ func New() *LuaExtender {
 	return le
 }
 
+func (le *LuaExtender) Input(s string) {
+	le.Term.Input(s)
+}
+
 // GetState returns the state of the moon interpreter
 func (le *LuaExtender) GetState() *lua.LState {
 	return le.luaState
+}
+
+func (le *LuaExtender) cls(l *lua.LState) int {
+	le.Term.Clear()
+	return 0
+}
+
+func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
+	return 0
+}
+
+func (le *LuaExtender) write(l *lua.LState) int {
+	return 0
+}
+
+func (le *LuaExtender) setANSI(l *lua.LState) int {
+	return 0
 }
 
 // InitState starts the lua interpreter with a script
@@ -59,77 +73,23 @@ func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	if err != nil {
 		return err
 	}
+
+	le.Term = term.Term{
+		C: le.ci.Conn,
+	}
+	le.Term.Init()
 	err = le.luaState.DoString(string(b))
 	return err
 }
 
-func removeLastRune(s string) string {
-	r := []rune(s)
-	n := len(r) - 1
-	if n < 0 {
-		n = 0
-	}
-	return string(r[:n])
-}
-
-// Input receives user input and interprets depending on the state of the engine.
-func (le *LuaExtender) Input(s string) {
-	fmt.Printf("input: %q\n", s)
-	if le.echo {
-		if s[0] == '\x1b' {
-			return
-		}
-		le.writeString(s)
-	}
-	if le.captureInput {
-		switch s[0] {
-		case '\u007f':
-			fallthrough
-		case '\b':
-			if len(le.inputField) == 0 {
-				return
-			}
-			le.writeString("\b \b")
-			le.inputField = removeLastRune(le.inputField)
-		case '\r':
-			le.captureInput = false
-			le.inputTrigger <- struct{}{}
-		default:
-			le.inputField += s
-		}
-	}
-}
-
-func (le *LuaExtender) writeString(s string) {
-	_, err := io.WriteString(le.ci.Conn, s)
-	if err != nil {
-		log.Println(err.Error())
-	}
-}
-
 func (le *LuaExtender) getField(l *lua.LState) int {
-	le.echo = true
-	le.captureInput = true
-	le.inputField = ""
-
-	<-le.inputTrigger
-
-	res := lua.LString(le.inputField)
-	le.inputField = ""
-	le.echo = false
+	res := lua.LString(le.Term.GetField())
 	l.Push(res)
 	return 1
 }
 
 func (le *LuaExtender) getPassword(l *lua.LState) int {
-	le.echo = false
-	le.captureInput = true
-	le.inputField = ""
-
-	<-le.inputTrigger
-
-	res := lua.LString(le.inputField)
-	le.inputField = ""
+	res := lua.LString(le.Term.GetField())
 	l.Push(res)
 	return 1
 }
@@ -154,7 +114,7 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 
 func (le *LuaExtender) setEcho(l *lua.LState) int {
 	b := l.ToBool(1)
-	le.echo = b
+	le.Term.SetEcho(b)
 	return 0
 }
 
@@ -169,58 +129,6 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 	res := lua.LString(a)
 	l.Push(res)
 	return 1
-}
-
-func (le *LuaExtender) setANSI(l *lua.LState) int {
-
-	s := "\u001b["
-	for i := 1; i <= l.GetTop(); i++ {
-		v := l.Get(i).String()
-		if i > 1 {
-			s += ";"
-		}
-		s += v
-	}
-	s += "m"
-	le.writeString(s)
-	return 0
-}
-
-func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
-	fileName := l.ToString(1)
-	f, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	r := bufio.NewReader(f)
-	for {
-		b, err := r.ReadByte()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		le.writeString(string(charset.ASCII[b]))
-	}
-	return 0
-}
-
-func (le *LuaExtender) resetScreen(l *lua.LState) int {
-	le.writeString("\u001bc")
-	return 0
-}
-
-func (le *LuaExtender) cls(l *lua.LState) int {
-	le.writeString("\u001b[2J")
-	return 0
-}
-
-func (le *LuaExtender) write(l *lua.LState) int {
-	s := l.ToString(1)
-	le.writeString(s)
-	return 0
 }
 
 func (le *LuaExtender) quit(l *lua.LState) int {
