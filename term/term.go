@@ -39,7 +39,7 @@ func (t *Term) Clear() error {
 	return err
 }
 
-func (t *Term) writeString(s string) {
+func (t *Term) WriteString(s string) {
 	_, err := io.WriteString(t.C, s)
 	if err != nil {
 		log.Println(err.Error())
@@ -90,7 +90,7 @@ func (t *Term) Input(s string) {
 		if s[0] == '\x1b' {
 			return
 		}
-		t.writeString(s)
+		t.WriteString(s)
 	}
 	if t.captureInput {
 		switch s[0] {
@@ -100,10 +100,11 @@ func (t *Term) Input(s string) {
 			if len(t.inputField) == 0 {
 				return
 			}
-			t.writeString("\b \b")
+			t.WriteString("\b \b")
 			t.inputField = removeLastRune(t.inputField)
 		case '\r':
 			t.captureInput = false
+			t.inputTrigger <- struct{}{}
 		default:
 			t.inputField += s
 		}
@@ -123,7 +124,7 @@ func (t *Term) setANSI() int {
 		}
 	*/
 	s += "m"
-	t.writeString(s)
+	t.WriteString(s)
 	return 0
 }
 
@@ -167,22 +168,22 @@ func (t *Term) writeFromASCII(fileName string) int {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t.writeString(string(charset.ASCII[b]))
+		t.WriteString(string(charset.ASCII[b]))
 	}
 	return 0
 }
 
 func (t *Term) resetScreen() int {
-	t.writeString("\u001bc")
+	t.WriteString("\u001bc")
 	return 0
 }
 
 func (t *Term) cls() int {
-	t.writeString("\u001b[2J")
+	t.WriteString("\u001b[2J")
 	return 0
 }
 
 func (t *Term) write(s string) int {
-	t.writeString(s)
+	t.WriteString(s)
 	return 0
 }
