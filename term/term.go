@@ -157,7 +157,7 @@ func (t *Term) GetPassword() string {
 	return res
 }
 
-func (t *Term) writeFromASCII(fileName string) int {
+func (t *Term) WriteFromASCII(fileName string) int {
 	f, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)

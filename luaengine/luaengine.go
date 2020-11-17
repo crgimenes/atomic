@@ -55,6 +55,8 @@ func (le *LuaExtender) cls(l *lua.LState) int {
 }
 
 func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
+	s := l.ToString(1)
+	le.Term.WriteFromASCII(s)
 	return 0
 }
 
