@@ -7,7 +7,6 @@ import (
 	"os/signal"
 
 	"github.com/crgimenes/atomic/config"
-	"github.com/crgimenes/atomic/luaengine"
 	"github.com/crgimenes/atomic/server"
 )
 
@@ -43,8 +42,7 @@ func main() {
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝
 `)
 
-	l := luaengine.New()
-	s := server.New(l)
+	s := server.New()
 
 	err = s.ListenAndServe()
 	if err != nil {

@@ -11,24 +11,16 @@ import (
 	"sync"
 
 	"github.com/crgimenes/atomic/client"
+	"github.com/crgimenes/atomic/luaengine"
 	"golang.org/x/crypto/ssh"
 )
 
-type LuaEngine interface {
-	InitState(r io.Reader, ci *client.Instance) error
-	Input(c string)
-	RunTrigger(name string) (bool, error)
-}
-
 type SSHServer struct {
 	mux sync.Mutex
-	le  LuaEngine
 }
 
-func New(le LuaEngine) *SSHServer {
-	return &SSHServer{
-		le: le,
-	}
+func New() *SSHServer {
+	return &SSHServer{}
 }
 
 func newServerConfig() (*ssh.ServerConfig, error) {
@@ -73,6 +65,9 @@ func (s *SSHServer) ListenAndServe() error {
 			log.Println("failed to accept incoming conn", err.Error())
 			continue
 		}
+
+		fmt.Println("ip:", conn.RemoteAddr())
+
 		// Before use, a handshake must be performed on the incoming net.Conn.
 		sshConn, chans, reqs, err := ssh.NewServerConn(conn, scfg)
 		if err != nil {
@@ -126,14 +121,15 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 		os.Exit(1)
 	}
 
-	ci := client.NewInstance(conn)
+	l := luaengine.New()
+	ci := client.NewInstance(conn, l)
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
 		for req := range requests {
+			log.Printf("%q %q", req.Type, req.Payload)
 			switch req.Type {
 			case "shell":
-				fmt.Println("shell")
 				// We only accept the default shell
 				// (i.e. no command in the Payload)
 				if len(req.Payload) == 0 {
@@ -143,7 +139,6 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 					}
 				}
 			case "pty-req":
-				fmt.Println("pty-req")
 				termLen := req.Payload[3]
 				s.mux.Lock()
 				ci.W, ci.H = parseDims(req.Payload[termLen+4:])
@@ -153,7 +148,6 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 					log.Println(err.Error())
 				}
 			case "window-change":
-				fmt.Println("window-change")
 				s.mux.Lock()
 				ci.W, ci.H = parseDims(req.Payload)
 				s.mux.Unlock()
@@ -171,17 +165,17 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 				break
 			}
 			k := string(b[:n])
-			ok, err := s.le.RunTrigger(k)
+			ok, err := ci.Le.RunTrigger(k)
 			if err != nil {
 				log.Println("error RunTrigger", err.Error())
 				break
 			}
 			if !ok {
-				s.le.Input(string(b[:n]))
+				ci.Le.Input(string(b[:n]))
 			}
 		}
 	}()
-	err = s.le.InitState(file, ci)
+	err = ci.Le.InitState(file, ci)
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)

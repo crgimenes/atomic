@@ -2,6 +2,7 @@ package term
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -84,27 +85,34 @@ func (t *Term) Print(lin, col int, s string) error {
 
 // Input receives user input and interprets depending on the state of the engine.
 func (t *Term) Input(s string) {
-	if t.echo {
-		if s[0] == '\x1b' {
-			return
+	fmt.Printf("> %q -> %X\r\n", s, s)
+	for _, c := range s {
+		if t.captureInput {
+			switch c {
+			case '\u007f':
+				fmt.Println("backspace UTF-8")
+				fallthrough
+			case '\b':
+				if len(t.inputField) == 0 {
+					return
+				}
+				t.WriteString("\b \b")
+				fmt.Println("backspace")
+				t.inputField = removeLastRune(t.inputField)
+				return
+			case '\r':
+				t.captureInput = false
+				t.inputTrigger <- struct{}{}
+				return
+			default:
+				t.inputField += s
+			}
 		}
-		t.WriteString(s)
-	}
-	if t.captureInput {
-		switch s[0] {
-		case '\u007f':
-			fallthrough
-		case '\b':
-			if len(t.inputField) == 0 {
+		if t.echo {
+			if s[0] == '\x1b' {
 				return
 			}
-			t.WriteString("\b \b")
-			t.inputField = removeLastRune(t.inputField)
-		case '\r':
-			t.captureInput = false
-			t.inputTrigger <- struct{}{}
-		default:
-			t.inputField += s
+			t.WriteString(s)
 		}
 	}
 }
