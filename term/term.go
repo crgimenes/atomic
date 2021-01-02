@@ -117,29 +117,6 @@ func (t *Term) Input(s string) {
 	}
 }
 
-func (t *Term) setANSI(v ...string) int {
-
-	t.WriteString("\u001b[")
-	for k, c := range v {
-		if k > 0 {
-			t.WriteString(";")
-		}
-		t.WriteString(c)
-	}
-
-	/*
-		for i := 1; i <= t.GetTop(); i++ {
-			v := t.Get(i).String()
-			if i > 1 {
-				s += ";"
-			}
-			s += v
-		}
-	*/
-	t.WriteString("m")
-	return 0
-}
-
 func (t *Term) GetField() string {
 	t.echo = true
 	t.captureInput = true
@@ -185,17 +162,20 @@ func (t *Term) WriteFromASCII(fileName string) int {
 	return 0
 }
 
-func (t *Term) resetScreen() int {
+// ResetScreen reset terminal screen
+func (t *Term) ResetScreen() int {
 	t.WriteString("\u001bc")
 	return 0
 }
 
-func (t *Term) cls() int {
+// Cls clear screen
+func (t *Term) Cls() int {
 	t.WriteString("\u001b[2J")
 	return 0
 }
 
-func (t *Term) write(s string) int {
+// Write string
+func (t *Term) Write(s string) int {
 	t.WriteString(s)
 	return 0
 }
