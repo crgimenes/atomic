@@ -4,14 +4,15 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/crgimenes/atomic/client"
 	"github.com/crgimenes/atomic/luaengine"
 )
 
 func TestNew(t *testing.T) {
 	l := luaengine.New()
-	sshServer := New(l)
+	sshServer := New()
 	type args struct {
-		le LuaEngine
+		le client.LuaEngine
 	}
 	tests := []struct {
 		name string
@@ -28,7 +29,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.le); !reflect.DeepEqual(got, tt.want) {
+			if got := New(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})

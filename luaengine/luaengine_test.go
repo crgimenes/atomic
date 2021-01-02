@@ -98,7 +98,7 @@ func TestFileExists(t *testing.T) {
 
 func TestRunPwd(t *testing.T) {
 	l := New()
-	c := client.NewInstance(nil)
+	c := client.NewInstance(nil, l)
 	s := strings.NewReader(`pwdStr = pwd()`)
 	err := l.InitState(s, c)
 	if err != nil {
