@@ -50,7 +50,10 @@ func (le *LuaExtender) GetState() *lua.LState {
 }
 
 func (le *LuaExtender) cls(l *lua.LState) int {
-	le.Term.Clear()
+	err := le.Term.Clear()
+	if err != nil {
+		fmt.Println(err)
+	}
 	return 0
 }
 
