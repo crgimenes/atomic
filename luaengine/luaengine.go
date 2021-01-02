@@ -19,8 +19,8 @@ type LuaExtender struct {
 	Term        term.Term
 	mutex       sync.RWMutex
 	luaState    *lua.LState
-	triggerList map[string]*lua.LFunction
 	ci          *client.Instance
+	triggerList map[string]*lua.LFunction
 }
 
 // New creates a new instance of LuaExtender
@@ -139,6 +139,9 @@ func (le *LuaExtender) timer(l *lua.LState) int {
 	go func() {
 		for {
 			<-time.After(time.Duration(t) * time.Millisecond)
+			if !le.ci.IsConnected {
+				return
+			}
 			ok, err := le.RunTrigger("timer")
 			if err != nil {
 				log.Println("timer trigger error", err)
@@ -168,6 +171,7 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 
 func (le *LuaExtender) quit(l *lua.LState) int {
 	le.ci.Conn.Close()
+	le.ci.IsConnected = false
 	return 0
 }
 

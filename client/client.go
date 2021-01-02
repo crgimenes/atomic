@@ -13,16 +13,18 @@ type LuaEngine interface {
 }
 
 type Instance struct {
-	Le   LuaEngine
-	Conn ssh.Channel
-	H, W uint32
+	Le          LuaEngine
+	Conn        ssh.Channel
+	H, W        uint32
+	IsConnected bool
 }
 
 func NewInstance(conn ssh.Channel, le LuaEngine) *Instance {
 	return &Instance{
-		Le:   le,
-		Conn: conn,
-		H:    25,
-		W:    80,
+		//	Le:          le,
+		Conn:        conn,
+		H:           25,
+		W:           80,
+		IsConnected: true,
 	}
 }

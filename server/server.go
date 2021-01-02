@@ -81,18 +81,18 @@ func (s *SSHServer) ListenAndServe() error {
 		// Discard all global out-of-band Requests
 		go ssh.DiscardRequests(reqs)
 		// Accept all channels
-		go s.handleChannels(chans)
+		go s.handleChannels(sshConn, chans)
 	}
 }
 
-func (s *SSHServer) handleChannels(chans <-chan ssh.NewChannel) {
+func (s *SSHServer) handleChannels(serverConn *ssh.ServerConn, chans <-chan ssh.NewChannel) {
 	// Service the incoming Channel channel in go routine
 	for newChannel := range chans {
-		go s.handleChannel(newChannel)
+		go s.handleChannel(serverConn, newChannel)
 	}
 }
 
-func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
+func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.NewChannel) {
 	// Since we're handling a shell, we expect a
 	// channel type of "session". The also describes
 	// "x11", "direct-tcpip" and "forwarded-tcpip"
@@ -165,17 +165,17 @@ func (s *SSHServer) handleChannel(newChannel ssh.NewChannel) {
 				break
 			}
 			k := string(b[:n])
-			ok, err := ci.Le.RunTrigger(k)
+			ok, err := l.RunTrigger(k)
 			if err != nil {
 				log.Println("error RunTrigger", err.Error())
 				break
 			}
 			if !ok {
-				ci.Le.Input(string(b[:n]))
+				l.Input(string(b[:n]))
 			}
 		}
 	}()
-	err = ci.Le.InitState(file, ci)
+	err = l.InitState(file, ci)
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)
