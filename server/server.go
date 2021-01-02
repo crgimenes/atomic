@@ -174,6 +174,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				l.Input(string(b[:n]))
 			}
 		}
+		ci.IsConnected = false
 	}()
 	err = l.InitState(file, ci)
 	if err != nil {
