@@ -22,9 +22,10 @@ func TestNewInstance(t *testing.T) {
 				conn: nil,
 			},
 			want: &Instance{
-				Conn: nil,
-				H:    25,
-				W:    80,
+				Conn:        nil,
+				H:           25,
+				W:           80,
+				IsConnected: true,
 			},
 		},
 	}

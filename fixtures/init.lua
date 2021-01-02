@@ -38,9 +38,9 @@ end
 clockAux = ""
 function Clock()
     clockAux = clockAux .. "a"
-    write("\27[s\27[0;0H")
+    write("\0277\27[0;0H")
     write(clockAux)
-    write("\27[u")
+    write("\0278")
 end
 
 write("[1] toggle echo on/off\r\n")
