@@ -35,11 +35,21 @@ function ToggleEcho()
     setEcho(Echo)
 end
 
-setANSI(1,4,31)
+clockAux = ""
+function Clock()
+    clockAux = clockAux .. "a"
+    write("\27[s\27[0;0H")
+    write(clockAux)
+    write("\27[u")
+end
+
 write("[1] toggle echo on/off\r\n")
 write("[2] print test string\r\n")
 write("[3] quit\r\n")
 write("choose an option\r\n")
+
+
+timer(500, Clock)
 
 
 trigger("1", ToggleEcho)

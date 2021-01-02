@@ -42,7 +42,7 @@ func (t *Term) Clear() error {
 func (t *Term) WriteString(s string) {
 	_, err := io.WriteString(t.C, s)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("term error writing string:", err)
 	}
 }
 

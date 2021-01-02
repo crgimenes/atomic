@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/crgimenes/atomic/client"
 	"github.com/crgimenes/atomic/term"
@@ -27,6 +29,7 @@ func New() *LuaExtender {
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.luaState = lua.NewState()
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
+	le.luaState.SetGlobal("timer", le.luaState.NewFunction(le.timer))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
@@ -112,9 +115,9 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 	}
 
 	err := le.luaState.CallByParam(lua.P{
-		Fn:      f,     // Lua function
-		NRet:    0,     // number of returned values
-		Protect: false, // return err or panic
+		Fn:      f,    // Lua function
+		NRet:    0,    // number of returned values
+		Protect: true, // return err or panic
 	})
 	return true, err
 }
@@ -122,6 +125,31 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 func (le *LuaExtender) setEcho(l *lua.LState) int {
 	b := l.ToBool(1)
 	le.Term.SetEcho(b)
+	return 0
+}
+
+func (le *LuaExtender) timer(l *lua.LState) int {
+	t := l.ToInt(1)
+	f := l.ToFunction(2)
+
+	le.mutex.Lock()
+	le.triggerList["timer"] = f
+	le.mutex.Unlock()
+
+	go func() {
+		for {
+			<-time.After(time.Duration(t) * time.Millisecond)
+			ok, err := le.RunTrigger("timer")
+			if err != nil {
+				log.Println("timer trigger error", err)
+				return
+			}
+			if !ok {
+				return
+			}
+		}
+	}()
+
 	return 0
 }
 
