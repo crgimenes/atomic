@@ -36,7 +36,17 @@ func newServerConfig() (*ssh.ServerConfig, error) {
 
 	scfg := &ssh.ServerConfig{
 		// TODO: improve authentication (allow key pair authentication, etc.)
-		NoClientAuth: true,
+
+		/*
+			PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+				if c.User() == "foo" && string(pass) == "bar" {
+					return nil, nil
+				}
+				return nil, fmt.Errorf("password rejected for %q", c.User())
+			},
+		*/
+
+		NoClientAuth: true, // allow anonymous client authentication
 		// The BBS system will authenticate the user in another step that is
 		// more lime the old BBS systems and also allow guest access.
 	}
