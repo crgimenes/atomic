@@ -42,6 +42,9 @@ func newServerConfig() (*ssh.ServerConfig, error) {
 	}
 	scfg.AddHostKey(pk)
 
+	// SSH-2.0-Go
+	scfg.ServerVersion = "SSH-2.0-ATOMIC\r\n"
+
 	return scfg, nil
 
 }
