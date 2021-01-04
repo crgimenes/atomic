@@ -31,6 +31,7 @@ func New() *LuaExtender {
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
 	le.luaState.SetGlobal("timer", le.luaState.NewFunction(le.timer))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
+	le.luaState.SetGlobal("rmTrigger", le.luaState.NewFunction(le.removeTrigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
 	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
@@ -107,9 +108,8 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 // RunTrigger executes a pre-configured trigger
 func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 	le.mutex.Lock()
-	defer le.mutex.Unlock()
-
 	f, ok := le.triggerList[name]
+	le.mutex.Unlock()
 	if !ok {
 		return false, nil
 	}
@@ -125,6 +125,14 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 func (le *LuaExtender) setEcho(l *lua.LState) int {
 	b := l.ToBool(1)
 	le.Term.SetEcho(b)
+	return 0
+}
+
+func (le *LuaExtender) removeTrigger(l *lua.LState) int {
+	n := l.ToString(1) // name
+	le.mutex.Lock()
+	delete(le.triggerList, n)
+	le.mutex.Unlock()
 	return 0
 }
 
@@ -144,7 +152,10 @@ func (le *LuaExtender) timer(l *lua.LState) int {
 	go func() {
 		for {
 			<-time.After(time.Duration(t) * time.Millisecond)
-			if !le.ci.IsConnected {
+			le.mutex.Lock()
+			_, ok := le.triggerList[n]
+			le.mutex.Unlock()
+			if !le.ci.IsConnected || !ok {
 				return
 			}
 			ok, err := le.RunTrigger(n)

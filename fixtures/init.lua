@@ -36,11 +36,16 @@ function ToggleEcho()
 end
 
 clockAux = ""
+clockInt = 0
 function Clock()
+    clockInt = clockInt+1
     clockAux = clockAux .. "a"
     write("\0277\27[0;0H")
     write(clockAux)
     write("\0278")
+    if clockInt>10 then 
+        rmTrigger("clock")
+    end
 end
 
 write("[1] toggle echo on/off\r\n")
@@ -49,7 +54,7 @@ write("[3] quit\r\n")
 write("choose an option\r\n")
 
 
-timer("timer", 500, Clock)
+timer("clock", 500, Clock)
 
 
 trigger("1", ToggleEcho)
