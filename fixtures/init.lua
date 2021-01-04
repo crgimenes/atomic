@@ -49,7 +49,7 @@ write("[3] quit\r\n")
 write("choose an option\r\n")
 
 
-timer(500, Clock)
+timer("timer", 500, Clock)
 
 
 trigger("1", ToggleEcho)
