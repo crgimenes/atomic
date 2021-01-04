@@ -129,11 +129,16 @@ func (le *LuaExtender) setEcho(l *lua.LState) int {
 }
 
 func (le *LuaExtender) timer(l *lua.LState) int {
-	t := l.ToInt(1)
-	f := l.ToFunction(2)
+	n := l.ToString(1)   // name
+	t := l.ToInt(2)      // timer
+	f := l.ToFunction(3) // function
+
+	if n == "" {
+		n = "timer"
+	}
 
 	le.mutex.Lock()
-	le.triggerList["timer"] = f
+	le.triggerList[n] = f
 	le.mutex.Unlock()
 
 	go func() {
@@ -142,9 +147,9 @@ func (le *LuaExtender) timer(l *lua.LState) int {
 			if !le.ci.IsConnected {
 				return
 			}
-			ok, err := le.RunTrigger("timer")
+			ok, err := le.RunTrigger(n)
 			if err != nil {
-				log.Println("timer trigger error", err)
+				log.Println(n, "timer trigger error", err)
 				return
 			}
 			if !ok {
