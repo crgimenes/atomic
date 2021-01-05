@@ -23,7 +23,7 @@ type LuaExtender struct {
 	triggerList map[string]*lua.LFunction
 }
 
-// New creates a new instance of LuaExtender
+// New creates a new instance of LuaExtender.
 func New() *LuaExtender {
 	le := &LuaExtender{}
 	le.triggerList = make(map[string]*lua.LFunction)
@@ -48,7 +48,7 @@ func (le *LuaExtender) Input(s string) {
 	le.Term.Input(s)
 }
 
-// GetState returns the state of the moon interpreter
+// GetState returns the state of the moon interpreter.
 func (le *LuaExtender) GetState() *lua.LState {
 	return le.luaState
 }
@@ -77,7 +77,7 @@ func (le *LuaExtender) setANSI(l *lua.LState) int {
 	return 0
 }
 
-// InitState starts the lua interpreter with a script
+// InitState starts the lua interpreter with a script.
 func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
 	le.ci = ci
 	b, err := ioutil.ReadAll(r)
@@ -105,7 +105,7 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 	return 1
 }
 
-// RunTrigger executes a pre-configured trigger
+// RunTrigger executes a pre-configured trigger.
 func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 	le.mutex.Lock()
 	f, ok := le.triggerList[name]
