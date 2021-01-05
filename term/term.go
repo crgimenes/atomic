@@ -89,15 +89,15 @@ func (t *Term) Input(s string) {
 	for _, c := range s {
 		if t.captureInput {
 			switch c {
+			case '\x1b':
+				return
 			case '\u007f':
-				fmt.Println("backspace UTF-8")
 				fallthrough
 			case '\b':
 				if len(t.inputField) == 0 {
 					return
 				}
 				t.WriteString("\b \b")
-				fmt.Println("backspace")
 				t.inputField = removeLastRune(t.inputField)
 				return
 			case '\r':
@@ -109,9 +109,6 @@ func (t *Term) Input(s string) {
 			}
 		}
 		if t.echo {
-			if s[0] == '\x1b' {
-				return
-			}
 			t.WriteString(s)
 		}
 	}

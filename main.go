@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-
 	err := config.Load()
 	if err != nil {
 		log.Println(err)
