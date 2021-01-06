@@ -24,6 +24,7 @@ type Term struct {
 func removeLastRune(s string) string {
 	r := []rune(s)
 	n := len(r) - 1
+
 	if n < 0 {
 		n = 0
 	}
@@ -53,9 +54,11 @@ func (t *Term) SetEcho(b bool) {
 func (t *Term) Print(lin, col int, s string) error {
 	c := t.W + 1 - col
 	l := len([]rune(s))
+
 	if c > l {
 		c = l
 	}
+
 	if c <= 0 {
 		return nil
 	}
@@ -108,6 +111,7 @@ func (t *Term) Input(s string) {
 				t.inputField += s
 			}
 		}
+
 		if t.echo {
 			t.WriteString(s)
 		}
@@ -146,6 +150,7 @@ func (t *Term) WriteFromASCII(fileName string) int {
 	}
 	defer f.Close()
 	r := bufio.NewReader(f)
+
 	for {
 		b, err := r.ReadByte()
 		if err == io.EOF {
@@ -159,19 +164,19 @@ func (t *Term) WriteFromASCII(fileName string) int {
 	return 0
 }
 
-// ResetScreen reset terminal screen
+// ResetScreen reset terminal screen.
 func (t *Term) ResetScreen() int {
 	t.WriteString("\u001bc")
 	return 0
 }
 
-// Cls clear screen
+// Cls clear screen.
 func (t *Term) Cls() int {
 	t.WriteString("\u001b[2J")
 	return 0
 }
 
-// Write string
+// Write string.
 func (t *Term) Write(s string) int {
 	t.WriteString(s)
 	return 0

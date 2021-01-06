@@ -34,7 +34,6 @@ func New() *LuaExtender {
 	le.luaState.SetGlobal("rmTrigger", le.luaState.NewFunction(le.removeTrigger))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
-	le.luaState.SetGlobal("setANSI", le.luaState.NewFunction(le.setANSI))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
 	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
 	le.luaState.SetGlobal("getPassword", le.luaState.NewFunction(le.getPassword))
@@ -64,16 +63,14 @@ func (le *LuaExtender) cls(l *lua.LState) int {
 func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
 	s := l.ToString(1)
 	le.Term.WriteFromASCII(s)
+
 	return 0
 }
 
 func (le *LuaExtender) write(l *lua.LState) int {
 	s := l.ToString(1)
 	le.Term.WriteString(s)
-	return 0
-}
 
-func (le *LuaExtender) setANSI(l *lua.LState) int {
 	return 0
 }
 

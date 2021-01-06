@@ -72,6 +72,7 @@ func (s *SSHServer) ListenAndServe() error {
 	}
 
 	log.Print("listening at 0.0.0.0:2200")
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -169,6 +170,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}()
 	go func() {
 		b := make([]byte, 8)
+
 		for {
 			n, err := conn.Read(b)
 			if err != nil {
