@@ -57,11 +57,14 @@ write("choose an option\r\n")
 timer("clock", 500, Clock)
 
 
+-- inlineImagesProtocol("nonfree/crg.png")
+
+
 trigger("1", ToggleEcho)
 trigger("2", TestPrint)
 trigger("3", ExitConnection)
 
-write("enter a string:")
+write("\nenter a string:")
 Str = getField()
 write("\n\n\n\r\n")
 write("[")

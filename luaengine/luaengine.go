@@ -1,6 +1,8 @@
 package luaengine
 
 import (
+	"bufio"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -39,6 +41,7 @@ func New() *LuaExtender {
 	le.luaState.SetGlobal("getPassword", le.luaState.NewFunction(le.getPassword))
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
+	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
 
 	return le
 }
@@ -63,6 +66,28 @@ func (le *LuaExtender) cls(l *lua.LState) int {
 func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
 	s := l.ToString(1)
 	le.Term.WriteFromASCII(s)
+
+	return 0
+}
+
+func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
+	s := l.ToString(1)
+
+	f, err := os.Open(s)
+	if err != nil {
+		fmt.Println(err)
+	}
+	reader := bufio.NewReader(f)
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(content)
+
+	le.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
+	le.Term.WriteString(encoded)
+	le.Term.WriteString("\a")
 
 	return 0
 }
