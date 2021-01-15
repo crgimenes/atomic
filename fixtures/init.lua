@@ -22,10 +22,10 @@ function ExitConnection()
 end
 
 function TestPrint()
-    print("testPrint")
-    write("\r\ntest print àáéíóúü~ãõç\r\n")
-    write("Str: ")
+    write("Você digitou: ")
     write(Str)
+    write("\r\n")
+    inlineImagesProtocol("nonfree/crg.png")
     write("\r\n")
 end
 
@@ -57,7 +57,6 @@ write("choose an option\r\n")
 timer("clock", 500, Clock)
 
 
--- inlineImagesProtocol("nonfree/crg.png")
 
 
 trigger("1", ToggleEcho)
