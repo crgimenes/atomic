@@ -18,6 +18,13 @@ func (db Database) List() ([]database.Bucket, error) {
 	return nil, nil
 }
 
+func (db Database) Use(buketName string) (Bucket, error) {
+	b := Bucket{
+		name: buketName,
+	}
+	return b, nil
+}
+
 func (b Bucket) Name() string {
 	return b.name
 }
