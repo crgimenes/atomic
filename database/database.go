@@ -2,6 +2,7 @@ package database
 
 type Database interface {
 	List() ([]Bucket, error)
+	Use(bucketName string) (Bucket, error)
 }
 
 type Bucket interface {
