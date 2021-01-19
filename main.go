@@ -11,10 +11,7 @@ import (
 )
 
 func main() {
-	err := config.Load()
-	if err != nil {
-		log.Println(err)
-	}
+	cfg := config.Get()
 
 	go func() {
 		sc := make(chan os.Signal, 1)
@@ -41,9 +38,10 @@ func main() {
  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝
 `)
 
+	fmt.Println("Database :", cfg.DatabasePath)
 	s := server.New()
 
-	err = s.ListenAndServe()
+	err := s.ListenAndServe()
 	if err != nil {
 		log.Println(err)
 	}
