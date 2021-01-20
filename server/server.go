@@ -12,17 +12,20 @@ import (
 
 	"github.com/crgimenes/atomic/client"
 	"github.com/crgimenes/atomic/config"
+	"github.com/crgimenes/atomic/database"
 	"github.com/crgimenes/atomic/luaengine"
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHServer struct {
+	db  database.Database
 	mux sync.Mutex
 	cfg config.Config
 }
 
-func New(cfg config.Config) *SSHServer {
+func New(cfg config.Config, db database.Database) *SSHServer {
 	return &SSHServer{
+		db:  db,
 		cfg: cfg,
 	}
 }
@@ -139,7 +142,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		os.Exit(1)
 	}
 
-	l := luaengine.New(s.cfg)
+	l := luaengine.New(s.cfg, s.db)
 	ci := client.NewInstance(conn, l)
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"

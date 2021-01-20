@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/crgimenes/atomic/config"
+	"github.com/crgimenes/atomic/database/jsonfiles"
 	"github.com/crgimenes/atomic/server"
 )
 
@@ -39,7 +40,10 @@ func main() {
 `)
 
 	fmt.Println("Database :", cfg.DatabasePath)
-	s := server.New(cfg)
+
+	db := jsonfiles.Database{}
+
+	s := server.New(cfg, db)
 
 	err := s.ListenAndServe()
 	if err != nil {

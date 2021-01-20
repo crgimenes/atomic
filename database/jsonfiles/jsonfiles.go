@@ -18,7 +18,7 @@ func (db Database) List() ([]database.Bucket, error) {
 	return nil, nil
 }
 
-func (db Database) Use(buketName string) (Bucket, error) {
+func (db Database) Use(buketName string) (database.Bucket, error) {
 	b := Bucket{
 		name: buketName,
 	}
