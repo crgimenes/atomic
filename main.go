@@ -41,11 +41,35 @@ func main() {
 
 	fmt.Println("Database :", cfg.DatabasePath)
 
-	db := jsonfiles.Database{}
+	db, err := jsonfiles.NewDatabase(cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	s := server.New(cfg, db)
 
-	err := s.ListenAndServe()
+	bucket, err := db.UseBucket("bbs")
+	if err != nil {
+		panic(err)
+	}
+
+	err = bucket.Save("test", cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	err = bucket.Load("test", &cfg)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", cfg)
+
+	l, err := bucket.List()
+	for k, v := range l {
+		fmt.Println(k, v)
+	}
+
+	err = s.ListenAndServe()
 	if err != nil {
 		log.Println(err)
 	}
