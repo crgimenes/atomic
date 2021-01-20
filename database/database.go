@@ -1,8 +1,8 @@
 package database
 
 type Database interface {
-	List() ([]Bucket, error)
-	Use(bucketName string) (Bucket, error)
+	ListBuckets() ([]string, error)
+	UseBucket(name string) (Bucket, error)
 }
 
 type Bucket interface {

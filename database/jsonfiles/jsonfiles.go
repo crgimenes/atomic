@@ -2,25 +2,54 @@ package jsonfiles
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 
+	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/database"
 )
 
 type Database struct {
+	path string
 }
 
 type Bucket struct {
+	path string
 	name string
 }
 
-func (db Database) List() ([]database.Bucket, error) {
-	return nil, nil
+func NewDatabase(cfg config.Config) (Database, error) {
+	path, err := filepath.Abs(cfg.DatabasePath)
+	if err != nil {
+		return Database{}, err
+	}
+	db := Database{
+		path: path,
+	}
+	return db, nil
 }
 
-func (db Database) Use(buketName string) (database.Bucket, error) {
+func (db Database) ListBuckets() ([]string, error) {
+	dir, err := ioutil.ReadDir(db.path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var r []string
+	for _, v := range dir {
+		if !v.IsDir() {
+			continue
+		}
+		r = append(r, v.Name())
+	}
+	return r, nil
+}
+
+func (db Database) UseBucket(name string) (database.Bucket, error) {
+	path := filepath.Join(db.path, name)
 	b := Bucket{
-		name: buketName,
+		name: name,
+		path: path,
 	}
 	return b, nil
 }
@@ -30,25 +59,40 @@ func (b Bucket) Name() string {
 }
 
 func (b Bucket) List() ([]string, error) {
-	return []string{}, nil
+	files, err := ioutil.ReadDir(b.path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var r []string
+	for _, v := range files {
+		if v.IsDir() {
+			continue
+		}
+		r = append(r, v.Name())
+	}
+	return r, nil
 }
 
 func (b Bucket) Save(ID string, value database.Data) error {
-	return nil
+	p, err := json.MarshalIndent(value, "", "\t")
+	if err != nil {
+		return err
+	}
+	file := filepath.Join(b.path, ID) + ".json"
+	err = ioutil.WriteFile(file, p, 0644)
+	return err
 }
 
 func (b Bucket) Load(ID string, value database.Data) error {
-	return nil
+	file := filepath.Join(b.path, ID) + ".json"
+	p, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(p, value)
+	return err
 }
 
 func (b Bucket) String() string {
 	return b.name
-}
-
-func ToString(i interface{}) string {
-	b, err := json.MarshalIndent(i, "", "\t")
-	if err != nil {
-		log.Println(err)
-	}
-	return string(b)
 }
