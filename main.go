@@ -39,7 +39,7 @@ func main() {
 `)
 
 	fmt.Println("Database :", cfg.DatabasePath)
-	s := server.New()
+	s := server.New(cfg)
 
 	err := s.ListenAndServe()
 	if err != nil {

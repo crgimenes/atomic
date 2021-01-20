@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/crgimenes/atomic/client"
+	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/term"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -26,7 +27,7 @@ type LuaExtender struct {
 }
 
 // New creates a new instance of LuaExtender.
-func New() *LuaExtender {
+func New(cfg config.Config) *LuaExtender {
 	le := &LuaExtender{}
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.luaState = lua.NewState()
