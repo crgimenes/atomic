@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+
 	"github.com/gosidekick/goconfig"
 )
 
@@ -12,6 +14,14 @@ type Config struct {
 }
 
 var cfg = Config{}
+
+func (c Config) String() string {
+	p, err := json.MarshalIndent(c, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+	return string(p)
+}
 
 func Get() Config {
 	return cfg
