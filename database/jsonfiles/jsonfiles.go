@@ -8,6 +8,7 @@ import (
 
 	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/database"
+	"github.com/gosimple/slug"
 )
 
 type Database struct {
@@ -78,12 +79,14 @@ func (b Bucket) Save(ID string, value database.Data) error {
 	if err != nil {
 		return err
 	}
+	ID = slug.Make(ID)
 	file := filepath.Join(b.path, ID) + ".json"
 	err = ioutil.WriteFile(file, p, 0644)
 	return err
 }
 
 func (b Bucket) Load(ID string, value database.Data) error {
+	ID = slug.Make(ID)
 	file := filepath.Join(b.path, ID) + ".json"
 	p, err := ioutil.ReadFile(file)
 	if err != nil {
