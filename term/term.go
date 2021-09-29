@@ -186,6 +186,11 @@ func (t *Term) ExitScreen() int {
 	return 0
 }
 
+func (t *Term) MoveCursor(x, y int) int {
+	t.WriteString(fmt.Sprintf("\033[%d;%dH", y, x))
+	return 0
+}
+
 // Write string.
 func (t *Term) Write(s string) int {
 	t.WriteString(s)
