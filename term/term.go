@@ -176,6 +176,16 @@ func (t *Term) Cls() int {
 	return 0
 }
 
+func (t *Term) EnterScreen() int {
+	t.WriteString("\033[?1049h\033[H")
+	return 0
+}
+
+func (t *Term) ExitScreen() int {
+	t.WriteString("\033[?1049l")
+	return 0
+}
+
 // Write string.
 func (t *Term) Write(s string) int {
 	t.WriteString(s)
