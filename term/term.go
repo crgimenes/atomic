@@ -67,12 +67,12 @@ func (t *Term) Print(lin, col int, s string) error {
 	s = string([]rune(s)[:c])
 
 	a := [][]byte{
-		([]byte("\u001b[")),
-		([]byte(strconv.Itoa(lin))),
-		([]byte{';'}),
-		([]byte(strconv.Itoa(col))),
-		([]byte{'f'}),
-		([]byte(s)),
+		[]byte("\u001b["),
+		[]byte(strconv.Itoa(lin)),
+		{';'},
+		[]byte(strconv.Itoa(col)),
+		{'f'},
+		[]byte(s),
 	}
 
 	var err error
