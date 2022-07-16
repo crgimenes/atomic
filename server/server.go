@@ -23,9 +23,8 @@ type SSHServer struct {
 	cfg config.Config
 }
 
-func New(cfg config.Config, db database.Database) *SSHServer {
+func New(cfg config.Config) *SSHServer {
 	return &SSHServer{
-		db:  db,
 		cfg: cfg,
 	}
 }
