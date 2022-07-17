@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/crgimenes/goconfig v1.4.7 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect

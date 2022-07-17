@@ -10,7 +10,10 @@ import (
 )
 
 func main() {
-	cfg := config.Config{}
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	go func() {
 		sc := make(chan os.Signal, 1)
@@ -24,7 +27,7 @@ func main() {
 
 	s := server.New(cfg)
 
-	err := s.ListenAndServe()
+	err = s.ListenAndServe()
 	if err != nil {
 		log.Println(err)
 	}

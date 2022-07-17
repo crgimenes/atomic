@@ -200,7 +200,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		l.Proto = proto
 	}
 
-	err = l.InitState(l.Proto, ci)
+	err = l.InitState(ci)
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)
