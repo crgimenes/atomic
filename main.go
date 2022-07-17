@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	cfg := config.Get()
+	cfg := config.Config{}
 
 	go func() {
 		sc := make(chan os.Signal, 1)
