@@ -1,13 +1,11 @@
 package client
 
 import (
-	"io"
-
 	"golang.org/x/crypto/ssh"
 )
 
 type LuaEngine interface {
-	InitState(r io.Reader, ci *Instance) error
+	InitState(source string, ci *Instance) error
 	Input(c string)
 	RunTrigger(name string) (bool, error)
 }
@@ -19,9 +17,8 @@ type Instance struct {
 	IsConnected bool
 }
 
-func NewInstance(conn ssh.Channel, le LuaEngine) *Instance {
+func NewInstance(conn ssh.Channel) *Instance {
 	return &Instance{
-		//	Le:          le,
 		Conn:        conn,
 		H:           25,
 		W:           80,

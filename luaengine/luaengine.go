@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -45,6 +44,10 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
 
 	return le
+}
+
+func (le *LuaExtender) Close() error {
+	return le.Close()
 }
 
 func (le *LuaExtender) Input(s string) {
@@ -101,19 +104,13 @@ func (le *LuaExtender) write(l *lua.LState) int {
 }
 
 // InitState starts the lua interpreter with a script.
-func (le *LuaExtender) InitState(r io.Reader, ci *client.Instance) error {
+func (le *LuaExtender) InitState(source string, ci *client.Instance) error {
 	le.ci = ci
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-
 	le.Term = term.Term{
 		C: le.ci.Conn,
 	}
 	le.Term.Init()
-	err = le.luaState.DoString(string(b))
-	return err
+	return le.luaState.DoString(source)
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {

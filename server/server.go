@@ -133,14 +133,9 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		return
 	}
 
-	file, err := os.Open("fixtures/init.lua")
-	if err != nil {
-		log.Println("can't open init.lua file", err.Error())
-		os.Exit(1)
-	}
-
 	l := luaengine.New(s.cfg)
-	ci := client.NewInstance(conn, l)
+	defer l.Close()
+	ci := client.NewInstance(conn)
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
@@ -195,7 +190,14 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		}
 		ci.IsConnected = false
 	}()
-	err = l.InitState(file, ci)
+
+	source, err := os.ReadFile("fixtures/init.lua")
+	if err != nil {
+		log.Println(err.Error())
+		os.Exit(1)
+	}
+
+	err = l.InitState(string(source), ci)
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)
