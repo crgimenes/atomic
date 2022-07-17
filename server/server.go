@@ -134,7 +134,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}
 
 	l := luaengine.New(s.cfg)
-	defer l.Close()
+	// defer l.Close() TODO: Verificar se é necessário fechar o engine
 	ci := client.NewInstance(conn)
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
@@ -191,13 +191,16 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		ci.IsConnected = false
 	}()
 
-	source, err := os.ReadFile("fixtures/init.lua")
-	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
+	if l.Proto == nil {
+		proto, err := l.Compile("fixtures/init.lua")
+		if err != nil {
+			log.Println(err.Error())
+			os.Exit(1)
+		}
+		l.Proto = proto
 	}
 
-	err = l.InitState(string(source), ci)
+	err = l.InitState(l.Proto, ci)
 	if err != nil {
 		log.Println("can't open init.lua file", err.Error())
 		os.Exit(1)

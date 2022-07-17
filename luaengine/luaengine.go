@@ -14,6 +14,7 @@ import (
 	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/term"
 	lua "github.com/yuin/gopher-lua"
+	parse "github.com/yuin/gopher-lua/parse"
 )
 
 // LuaExtender holds an instance of the moon interpreter and the state variables of the extensions we made.
@@ -23,6 +24,7 @@ type LuaExtender struct {
 	luaState    *lua.LState
 	ci          *client.Instance
 	triggerList map[string]*lua.LFunction
+	Proto       *lua.FunctionProto
 }
 
 // New creates a new instance of LuaExtender.
@@ -103,14 +105,41 @@ func (le *LuaExtender) write(l *lua.LState) int {
 	return 0
 }
 
+// CompileLua reads the passed lua file from disk and compiles it.
+func (le *LuaExtender) Compile(filePath string) (*lua.FunctionProto, error) {
+	file, err := os.Open(filePath)
+	defer file.Close()
+	if err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(file)
+	chunk, err := parse.Parse(reader, filePath)
+	if err != nil {
+		return nil, err
+	}
+	proto, err := lua.Compile(chunk, filePath)
+	if err != nil {
+		return nil, err
+	}
+	return proto, nil
+}
+
+// DoCompiledFile takes a FunctionProto, as returned by CompileLua, and runs it in the LState. It is equivalent
+// to calling DoFile on the LState with the original source file.
+func (le *LuaExtender) DoCompiledFile(L *lua.LState, proto *lua.FunctionProto) error {
+	lfunc := L.NewFunctionFromProto(proto)
+	L.Push(lfunc)
+	return L.PCall(0, lua.MultRet, nil)
+}
+
 // InitState starts the lua interpreter with a script.
-func (le *LuaExtender) InitState(source string, ci *client.Instance) error {
+func (le *LuaExtender) InitState(ci *client.Instance) error {
 	le.ci = ci
 	le.Term = term.Term{
 		C: le.ci.Conn,
 	}
 	le.Term.Init()
-	return le.luaState.DoString(source)
+	return le.DoCompiledFile(le.luaState, le.Proto)
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {
