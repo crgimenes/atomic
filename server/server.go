@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -27,8 +26,8 @@ func New(cfg config.Config) *SSHServer {
 	}
 }
 
-func newServerConfig() (*ssh.ServerConfig, error) {
-	b, err := ioutil.ReadFile("id_rsa")
+func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
+	b, err := os.ReadFile(s.cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load private key, %v", err.Error())
 	}
@@ -65,17 +64,17 @@ func newServerConfig() (*ssh.ServerConfig, error) {
 
 func (s *SSHServer) ListenAndServe() error {
 
-	l, err := net.Listen("tcp", "0.0.0.0:2200")
+	l, err := net.Listen("tcp", s.cfg.Listen)
 	if err != nil {
-		return fmt.Errorf("failed to listen on 2200, %v", err.Error())
+		return fmt.Errorf("failed to listen on %v, %v\n", s.cfg.Listen, err.Error())
 	}
 
-	scfg, err := newServerConfig()
+	scfg, err := s.newServerConfig()
 	if err != nil {
 		return err
 	}
 
-	log.Print("listening at 0.0.0.0:2200")
+	log.Printf("listening at %v\n", s.cfg.Listen)
 
 	for {
 		conn, err := l.Accept()
@@ -84,7 +83,7 @@ func (s *SSHServer) ListenAndServe() error {
 			continue
 		}
 
-		fmt.Println("ip:", conn.RemoteAddr())
+		log.Println("ip:", conn.RemoteAddr())
 
 		// Before use, a handshake must be performed on the incoming net.Conn.
 		sshConn, chans, reqs, err := ssh.NewServerConn(conn, scfg)
@@ -192,7 +191,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}()
 
 	if l.Proto == nil {
-		proto, err := l.Compile("fixtures/init.lua")
+		proto, err := l.Compile(s.cfg.InitBBSFile)
 		if err != nil {
 			log.Println(err.Error())
 			os.Exit(1)
@@ -202,7 +201,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 	err = l.InitState(ci)
 	if err != nil {
-		log.Println("can't open init.lua file", err.Error())
+		log.Printf("can't open %v file, %v\n", s.cfg.InitBBSFile, err.Error())
 		os.Exit(1)
 	}
 }
