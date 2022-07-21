@@ -12,12 +12,14 @@ import (
 	"github.com/crgimenes/atomic/client"
 	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/luaengine"
+	lua "github.com/yuin/gopher-lua"
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHServer struct {
-	mux sync.Mutex
-	cfg config.Config
+	mux   sync.Mutex
+	proto *lua.FunctionProto
+	cfg   config.Config
 }
 
 func New(cfg config.Config) *SSHServer {
@@ -190,14 +192,26 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		ci.IsConnected = false
 	}()
 
-	if l.Proto == nil {
+	l.Proto = s.proto
+	if s.proto == nil {
 		proto, err := l.Compile(s.cfg.InitBBSFile)
 		if err != nil {
 			log.Println(err.Error())
 			os.Exit(1)
 		}
 		l.Proto = proto
+		s.proto = proto
 	}
+	/*
+		if l.Proto == nil {
+			proto, err := l.Compile(s.cfg.InitBBSFile)
+			if err != nil {
+				log.Println(err.Error())
+				os.Exit(1)
+			}
+			l.Proto = proto
+		}
+	*/
 
 	err = l.InitState(ci)
 	if err != nil {

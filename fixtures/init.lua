@@ -9,9 +9,10 @@ write("╚██████╗██║  ██║╚██████╔╝�
 write(" ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝\r\n")
 write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
+write("\r\n")
 
 
-writeFromASCII("nonfree/squiddy.ans")
+-- writeFromASCII("nonfree/squiddy.ans")
 
 Str = ""
 
@@ -38,14 +39,11 @@ end
 clockAux = ""
 clockInt = 0
 function Clock()
-    clockInt = clockInt+1
-    clockAux = clockAux .. "a"
     write("\0277\27[0;0H")
-    write(clockAux)
+    write(os.date('%Y-%m-%d %H:%M:%S UTC'))
+    -- os.date("%Y-%m-%dT%H:%m:%S.000 %z"
     write("\0278")
-    if clockInt>10 then 
-        rmTrigger("clock")
-    end
+    -- rmTrigger("clock")
 end
 
 write("[1] toggle echo on/off\r\n")
