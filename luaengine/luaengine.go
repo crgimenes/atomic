@@ -36,6 +36,7 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("timer", le.luaState.NewFunction(le.timer))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("rmTrigger", le.luaState.NewFunction(le.removeTrigger))
+	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.clearTriggers))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
 	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
@@ -181,6 +182,13 @@ func (le *LuaExtender) removeTrigger(l *lua.LState) int {
 	n := l.ToString(1) // name
 	le.mutex.Lock()
 	delete(le.triggerList, n)
+	le.mutex.Unlock()
+	return 0
+}
+
+func (le *LuaExtender) clearTriggers(l *lua.LState) int {
+	le.mutex.Lock()
+	le.triggerList = make(map[string]*lua.LFunction)
 	le.mutex.Unlock()
 	return 0
 }
