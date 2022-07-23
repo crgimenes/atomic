@@ -7,9 +7,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"sync"
+	"syscall"
 	"time"
+	"unsafe"
 
+	"github.com/creack/pty"
 	"github.com/crgimenes/atomic/client"
 	"github.com/crgimenes/atomic/config"
 	"github.com/crgimenes/atomic/term"
@@ -19,12 +23,13 @@ import (
 
 // LuaExtender holds an instance of the moon interpreter and the state variables of the extensions we made.
 type LuaExtender struct {
-	Term        term.Term
-	mutex       sync.RWMutex
-	luaState    *lua.LState
-	ci          *client.Instance
-	triggerList map[string]*lua.LFunction
-	Proto       *lua.FunctionProto
+	Term         term.Term
+	mutex        sync.RWMutex
+	luaState     *lua.LState
+	ci           *client.Instance
+	triggerList  map[string]*lua.LFunction
+	Proto        *lua.FunctionProto
+	ExternalExec bool
 }
 
 // New creates a new instance of LuaExtender.
@@ -45,6 +50,8 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
+	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
+	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
 
 	return le
 }
@@ -268,4 +275,145 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func (le *LuaExtender) fileExists(l *lua.LState) int {
+	filename := l.ToString(1)
+	res := lua.LBool(fileExists(filename))
+	l.Push(res)
+	return 1
+}
+
+func (le *LuaExtender) exec(l *lua.LState) int {
+	execFile := l.ToString(1)
+	le.ExternalExec = true
+	le.Term.Cls()
+	npty, ntty, err := pty.Open()
+	if err != nil {
+		log.Printf("Could not start pty (%s)", err)
+	}
+
+	cmd := exec.Command(execFile)
+	cmd.Stdout = ntty
+	cmd.Stdin = ntty
+	cmd.Stderr = ntty
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setctty: true,
+		Setsid:  true, // TODO: Evaluate me?
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Printf("Failed to start %v (%s)", execFile, err)
+		return 0
+	}
+
+	go func() {
+		/*
+			n, err := io.Copy(le.ci.Conn, npty)
+			if err != nil {
+				log.Printf("1 n: %v (%v)", n, err)
+			}
+		*/
+		for {
+			b := make([]byte, 8)
+			n, err := npty.Read(b)
+			if err != nil {
+				log.Printf("1 -> n: %v (%v)", n, err)
+				return
+			}
+			_, err = le.ci.Conn.Write(b[:n])
+			if err != nil {
+				log.Printf("1 <- n: %v (%v)", n, err)
+				return
+			}
+		}
+	}()
+
+	go func() {
+		/*
+			n, err := io.Copy(npty, le.ci.Conn)
+			if err != nil {
+				log.Printf("2 n: %v (%v)", n, err)
+			}
+		*/
+		for {
+			b := make([]byte, 8)
+			n, err := le.ci.Conn.Read(b)
+			if err != nil {
+				log.Printf("2 -> n: %v (%v)", n, err)
+				return
+			}
+			_, err = npty.Write(b[:n])
+			if err != nil {
+				log.Printf("2 <- n: %v (%v)", n, err)
+				le.ci.Conn.Write(b)
+				return
+			}
+		}
+	}()
+
+	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
+	/*
+		go func() {
+			for req := range requests {
+				switch req.Type {
+				case "shell":
+					// We only accept the default shell
+					// (i.e. no command in the Payload)
+					if len(req.Payload) == 0 {
+						req.Reply(true, nil)
+					}
+				case "pty-req":
+					termLen := req.Payload[3]
+					w, h := parseDims(req.Payload[termLen+4:])
+					SetWinsize(npty.Fd(), w, h)
+					// Responding true (OK) here will let the client
+					// know we have a pty ready for input
+					req.Reply(true, nil)
+				case "window-change":
+					w, h := parseDims(req.Payload)
+					SetWinsize(npty.Fd(), w, h)
+				}
+			}
+		}()
+	*/
+
+	go func() {
+		var w, h uint32
+		var sizeAux string
+
+		for {
+			// TODO: improve using a channels
+			if !le.ExternalExec {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+			w = le.ci.W
+			h = le.ci.H
+			if sizeAux == fmt.Sprintf("%d;%d", w, h) {
+				continue
+			}
+
+			SetWinsize(npty.Fd(), w, h)
+			sizeAux = fmt.Sprintf("%d;%d", w, h)
+		}
+	}()
+
+	cmd.Wait()
+	le.ExternalExec = false
+
+	return 0
+}
+
+// Winsize stores the Height and Width of a terminal.
+type Winsize struct {
+	Height uint16
+	Width  uint16
+	x      uint16 // unused
+	y      uint16 // unused
+}
+
+func SetWinsize(fd uintptr, w, h uint32) {
+	ws := &Winsize{Width: uint16(w), Height: uint16(h)}
+	syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCSWINSZ), uintptr(unsafe.Pointer(ws)))
 }

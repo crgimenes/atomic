@@ -1,5 +1,4 @@
 cls()
-print("print in server terminal")
 write("\r\nthis is a test write to client instance\r\n")
 write(" ██████╗██████╗  ██████╗    ███████╗████████╗██╗   ██████╗ ██████╗\r\n")
 write("██╔════╝██╔══██╗██╔════╝    ██╔════╝╚══██╔══╝██║   ██╔══██╗██╔══██╗\r\n")
@@ -15,6 +14,12 @@ write("\r\n")
 -- writeFromASCII("nonfree/squiddy.ans")
 
 Str = ""
+
+function ExecTest()
+    exec("zsh")
+    cls()
+    menu()
+end
 
 function ExitConnection()
     print("quit user")
@@ -46,26 +51,27 @@ function Clock()
     -- rmTrigger("clock")
 end
 
-write("[1] toggle echo on/off\r\n")
-write("[2] print test string\r\n")
-write("[3] quit\r\n")
-write("choose an option\r\n")
+function menu()
+    write("[1] toggle echo on/off\r\n")
+    write("[2] print test string\r\n")
+    write("[3] quit\r\n")
+    write("[4] zsh\r\n")
+    write("choose an option\r\n")
+end
 
-
+menu()
 timer("clock", 500, Clock)
-
-
-
 
 trigger("1", ToggleEcho)
 trigger("2", TestPrint)
 trigger("3", ExitConnection)
+trigger("4", ExecTest)
 
-write("\nenter a string:")
-Str = getField()
+-- write("\nenter a string:")
+-- Str = getField()
 write("\n\n\n\r\n")
 write("[")
-write(Str)
+-- write(Str)
 write("]")
 write("\n\n\n\r\n")
 -- quit()

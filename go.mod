@@ -3,6 +3,7 @@ module github.com/crgimenes/atomic
 go 1.18
 
 require (
+	github.com/creack/pty v1.1.18
 	github.com/crgimenes/goconfig v1.4.7
 	github.com/gosimple/slug v1.12.0
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64

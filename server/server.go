@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/crgimenes/atomic/client"
 	"github.com/crgimenes/atomic/config"
@@ -94,13 +95,14 @@ func (s *SSHServer) ListenAndServe() error {
 			continue
 		}
 
-		log.Printf("new SSH conn from %s (%s)",
+		log.Printf("new SSH connection from %s (%s)",
 			sshConn.RemoteAddr(),
 			sshConn.ClientVersion())
 		// Discard all global out-of-band Requests
 		go ssh.DiscardRequests(reqs)
 		// Accept all channels
 		go s.handleChannels(sshConn, chans)
+
 	}
 }
 
@@ -135,13 +137,12 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}
 
 	l := luaengine.New(s.cfg)
-	// defer l.Close() TODO: Verificar se é necessário fechar o engine
 	ci := client.NewInstance(conn)
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
 		for req := range requests {
-			log.Printf("%q %q", req.Type, req.Payload)
+			// log.Printf("%q %q", req.Type, req.Payload)
 			switch req.Type {
 			case "shell":
 				// We only accept the default shell
@@ -165,14 +166,26 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				s.mux.Lock()
 				ci.W, ci.H = parseDims(req.Payload)
 				s.mux.Unlock()
+			default:
+				err := req.Reply(false, nil)
+				if err != nil {
+					log.Println(err.Error())
+				}
 			}
 		}
 	}()
+
 	go func() {
 		b := make([]byte, 8)
 
 		for {
+			if l.ExternalExec {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			fmt.Println("reading from client")
 			n, err := conn.Read(b)
+			fmt.Println("read:", string(b))
 			if err != nil {
 				if err != io.EOF {
 					log.Println(err.Error())
@@ -194,6 +207,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 	l.Proto = s.proto
 	if s.proto == nil {
+		//TODO: move to main
 		proto, err := l.Compile(s.cfg.InitBBSFile)
 		if err != nil {
 			log.Println(err.Error())

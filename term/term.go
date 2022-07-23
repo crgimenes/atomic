@@ -105,7 +105,7 @@ func (t *Term) Print(lin, col int, s string) error {
 
 // Input receives user input and interprets depending on the state of the engine.
 func (t *Term) Input(s string) {
-	fmt.Printf("> %q -> %X\r\n", s, s)
+	//fmt.Printf("> %q -> %X\r\n", s, s)
 	for _, c := range s {
 		if t.captureInput {
 			switch c {
