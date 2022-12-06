@@ -11,7 +11,7 @@ write("██  ██  ██  ██  ██  ██  ██  ██  ██  �
 write("\r\n")
 
 
--- writeFromASCII("nonfree/squiddy.ans")
+writeFromASCII("nonfree/squiddy.ans")
 
 Str = ""
 

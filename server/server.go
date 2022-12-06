@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -30,6 +31,23 @@ func New(cfg config.Config) *SSHServer {
 }
 
 func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
+
+	authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
+	if err != nil {
+		log.Fatalf("Failed to load authorized_keys, err: %v", err)
+	}
+
+	authorizedKeysMap := map[string]bool{}
+	for len(authorizedKeysBytes) > 0 {
+		pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		authorizedKeysMap[string(pubKey.Marshal())] = true
+		authorizedKeysBytes = rest
+	}
+
 	b, err := os.ReadFile(s.cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load private key, %v", err.Error())
@@ -41,28 +59,42 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 	}
 
 	scfg := &ssh.ServerConfig{
-		// TODO: improve authentication (allow key pair authentication, etc.)
+		NoClientAuth: false,
+		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+			if c.User() == "foo" && string(pass) == "bar" {
+				log.Printf("user %v authenticated with password", c.User())
+				return nil, nil
+			}
+			return nil, fmt.Errorf("password rejected for %q", c.User())
+		},
+		PublicKeyCallback: func(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			log.Printf("Public key for %q, %q, %q, %s",
+				c.User(),
+				c.RemoteAddr(),
+				key.Type(),
+				ssh.FingerprintSHA256(key))
 
-		/*
-			PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-				if c.User() == "foo" && string(pass) == "bar" {
-					return nil, nil
-				}
-				return nil, fmt.Errorf("password rejected for %q", c.User())
-			},
-		*/
-
-		NoClientAuth: true, // allow anonymous client authentication
-		// The BBS system will authenticate the user in another step that is
-		// more lime the old BBS systems and also allow guest access.
+			if authorizedKeysMap[string(key.Marshal())] {
+				return &ssh.Permissions{
+					// Record the public key used for authentication.
+					Extensions: map[string]string{
+						"pubkey-fp": ssh.FingerprintSHA256(key),
+					},
+				}, nil
+			}
+			return nil, fmt.Errorf("unknown public key for %q", c.User())
+		},
 	}
 	scfg.AddHostKey(pk)
 
 	// SSH-2.0-Go
 	scfg.ServerVersion = "SSH-2.0-ATOMIC"
+	scfg.BannerCallback = func(conn ssh.ConnMetadata) string {
+		return "Welcome to Atomic\n"
+		// ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no localhost -p 2200
+	}
 
 	return scfg, nil
-
 }
 
 func (s *SSHServer) ListenAndServe() error {
@@ -102,7 +134,6 @@ func (s *SSHServer) ListenAndServe() error {
 		go ssh.DiscardRequests(reqs)
 		// Accept all channels
 		go s.handleChannels(sshConn, chans)
-
 	}
 }
 
