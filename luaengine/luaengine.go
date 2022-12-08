@@ -345,8 +345,18 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			}
 			_, err = npty.Write(b[:n])
 			if err != nil {
-				log.Printf("2 <- n: %v (%v)", n, err)
-				le.ci.Conn.Write(b)
+				log.Printf("2 <- n: %v (%v) %q", n, err, b[:n])
+				//le.ci.Conn.Write(b[:n])
+				//le.Input(string(b[:n]))
+				ok, err := le.RunTrigger(string(b[:n]))
+				if err != nil {
+					log.Println("error RunTrigger", err.Error())
+					return
+				}
+				if !ok {
+					le.Input(string(b[:n]))
+				}
+
 				return
 			}
 		}

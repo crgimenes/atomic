@@ -66,7 +66,6 @@ timer("clock", 500, Clock)
 trigger("1", ToggleEcho)
 trigger("2", TestPrint)
 trigger("3", ExitConnection)
-trigger("\x03", ExitConnection)
 trigger("4", ExecTest)
 
 write("\nenter a string:")
