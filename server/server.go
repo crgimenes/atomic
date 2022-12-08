@@ -46,6 +46,8 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 
 		authorizedKeysMap[string(pubKey.Marshal())] = true
 		authorizedKeysBytes = rest
+
+		log.Printf("authorized key fingerprint: %s, %s", pubKey.Type(), ssh.FingerprintSHA256(pubKey))
 	}
 
 	b, err := os.ReadFile(s.cfg.PrivateKey)
@@ -58,9 +60,12 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 		return nil, fmt.Errorf("failed to parse private key, %v", err.Error())
 	}
 
+	log.Printf("private key fingerprint: %s", ssh.FingerprintSHA256(pk.PublicKey()))
+
 	scfg := &ssh.ServerConfig{
 		NoClientAuth: false,
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+			log.Println("password callback")
 			if c.User() == "foo" && string(pass) == "bar" {
 				log.Printf("user %v authenticated with password", c.User())
 				return nil, nil
@@ -86,14 +91,45 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 		},
 	}
 	scfg.AddHostKey(pk)
+	// set ssh authentication method
+	scfg.AuthLogCallback = func(conn ssh.ConnMetadata, method string, err error) {
+		if err != nil {
+			log.Printf("Failed authentication for %q from %v, error: %v", conn.User(), conn.RemoteAddr(), err)
+			return
+		}
+		log.Printf("Successful authentication for %q from %v using %v", conn.User(), conn.RemoteAddr(), method)
+
+	}
+	scfg.KeyboardInteractiveCallback = func(conn ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
+		log.Println("keyboard interactive callback")
+		if conn.User() == "foo" {
+			// We don't care about the provided instructions or echos.
+			// We only accept one answer, and it must be "bar".
+			answers, err := client("", "", []string{"Password:"}, []bool{true})
+			if err != nil {
+				return nil, err
+			}
+			if len(answers) != 1 || answers[0] != "bar" {
+				return nil, fmt.Errorf("keyboard-interactive challenge failed")
+			}
+			return nil, nil
+		}
+		return nil, fmt.Errorf("keyboard-interactive challenge failed")
+	}
 
 	// SSH-2.0-Go
 	scfg.ServerVersion = "SSH-2.0-ATOMIC"
 	scfg.BannerCallback = func(conn ssh.ConnMetadata) string {
 		return "Welcome to Atomic\n"
 		// ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no localhost -p 2200
+
+		// supported key types
+		// ssh-keygen -t ecdsa -b 521
+		// ssh-keygen -t ed25519
+
 	}
 
+	scfg.MaxAuthTries = 3
 	return scfg, nil
 }
 
@@ -123,11 +159,11 @@ func (s *SSHServer) ListenAndServe() error {
 		// Before use, a handshake must be performed on the incoming net.Conn.
 		sshConn, chans, reqs, err := ssh.NewServerConn(conn, scfg)
 		if err != nil {
-			log.Println("failed to handshake", err.Error())
+			log.Printf("failed to handshake, %v", err.Error())
 			continue
 		}
 
-		log.Printf("new SSH connection from %s (%s)",
+		log.Printf("new SSH connection from %s, %s",
 			sshConn.RemoteAddr(),
 			sshConn.ClientVersion())
 		// Discard all global out-of-band Requests
@@ -198,6 +234,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				ci.W, ci.H = parseDims(req.Payload)
 				s.mux.Unlock()
 			default:
+				log.Printf("unknown request: %s, %q, %v\n", req.Type, req.Payload, req.WantReply)
 				err := req.Reply(false, nil)
 				if err != nil {
 					log.Println(err.Error())
@@ -216,7 +253,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			}
 			fmt.Println("reading from client")
 			n, err := conn.Read(b)
-			fmt.Println("read:", string(b))
+			fmt.Printf("read: %s (%q)", string(b[:n]), b[:n])
 			if err != nil {
 				if err != io.EOF {
 					log.Println(err.Error())

@@ -125,6 +125,7 @@ func (t *Term) Input(s string) {
 				t.inputTrigger <- struct{}{}
 				return
 			default:
+				fmt.Printf("%q", c)
 				t.inputField += s
 			}
 		}
@@ -136,6 +137,9 @@ func (t *Term) Input(s string) {
 }
 
 func (t *Term) GetField() string {
+
+	// get input from user
+
 	t.echo = true
 	t.captureInput = true
 	t.inputField = ""
