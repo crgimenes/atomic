@@ -253,7 +253,6 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			}
 			fmt.Println("reading from client")
 			n, err := conn.Read(b)
-			fmt.Printf("read: %s (%q)", string(b[:n]), b[:n])
 			if err != nil {
 				if err != io.EOF {
 					log.Println(err.Error())

@@ -105,15 +105,32 @@ func (t *Term) Print(lin, col int, s string) error {
 
 // Input receives user input and interprets depending on the state of the engine.
 func (t *Term) Input(s string) {
-	//fmt.Printf("> %q -> %X\r\n", s, s)
+	fmt.Printf("> %q -> %X\r\n", s, s)
 	for _, c := range s {
+		fmt.Printf("\t%q -> %X\r", c, c)
 		if t.captureInput {
 			switch c {
 			case '\x1b':
+				if len(s) >= 3 {
+					if s[1] == '[' {
+						switch s[2] {
+						case 'A':
+							t.WriteString("\x1b[1A")
+							return
+						case 'B':
+							t.WriteString("\x1b[1B")
+							return
+						case 'C':
+							t.WriteString("\x1b[1C")
+							return
+						case 'D':
+							t.WriteString("\x1b[1D")
+							return
+						}
+					}
+				}
 				return
-			case '\u007f':
-				fallthrough
-			case '\b':
+			case '\u007f', '\b':
 				if len(t.inputField) == 0 {
 					return
 				}
