@@ -330,6 +330,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	}()
 
 	go func() {
+		b := make([]byte, 1024)
 		/*
 			n, err := io.Copy(npty, le.ci.Conn)
 			if err != nil {
@@ -337,7 +338,6 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			}
 		*/
 		for {
-			b := make([]byte, 8)
 			n, err := le.ci.Conn.Read(b)
 			if err != nil {
 				log.Printf("2 -> n: %v (%v)", n, err)

@@ -126,12 +126,12 @@ func (t *Term) Input(s string) {
 				return
 			default:
 				fmt.Printf("%q", c)
-				t.inputField += s
+				t.inputField += string(c)
 			}
 		}
 
 		if t.echo {
-			t.WriteString(s)
+			t.WriteString(string(c))
 		}
 	}
 }
