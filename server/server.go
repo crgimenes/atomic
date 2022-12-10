@@ -218,6 +218,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					err = req.Reply(true, nil)
 					if err != nil {
 						log.Println(err.Error())
+						return
 					}
 				}
 			case "pty-req":
@@ -228,6 +229,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				err := req.Reply(true, nil)
 				if err != nil {
 					log.Println(err.Error())
+					return
 				}
 			case "window-change":
 				s.mux.Lock()
@@ -238,11 +240,20 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				if err != nil {
 					req.Reply(false, nil)
 					log.Println(err.Error())
+					return
 				}
 
-				var p struct{ Key, Value string }
+				if len(ci.Environment) > 1000 {
+					log.Println("too many env vars")
+					return
+				}
+
+				var p client.KeyValue
 				ssh.Unmarshal(req.Payload, &p)
 				log.Printf("env: %s = %s", p.Key, p.Value)
+				environ := ci.Environment
+				environ[p.Key] = p.Value
+				ci.Environment = environ
 				req.Reply(true, nil)
 
 			default:

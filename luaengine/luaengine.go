@@ -52,6 +52,7 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
 	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
 	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
+	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
 
 	return le
 }
@@ -159,6 +160,14 @@ func (le *LuaExtender) getField(l *lua.LState) int {
 func (le *LuaExtender) getPassword(l *lua.LState) int {
 	res := lua.LString(le.Term.GetField())
 	l.Push(res)
+	return 1
+}
+
+// getEnv returns the value of the environment variable named by the key.
+func (le *LuaExtender) getEnv(l *lua.LState) int {
+	key := l.ToString(1)
+	value := le.ci.Environment[key]
+	l.Push(lua.LString(value))
 	return 1
 }
 
@@ -361,32 +370,6 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			}
 		}
 	}()
-
-	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
-	/*
-		go func() {
-			for req := range requests {
-				switch req.Type {
-				case "shell":
-					// We only accept the default shell
-					// (i.e. no command in the Payload)
-					if len(req.Payload) == 0 {
-						req.Reply(true, nil)
-					}
-				case "pty-req":
-					termLen := req.Payload[3]
-					w, h := parseDims(req.Payload[termLen+4:])
-					SetWinsize(npty.Fd(), w, h)
-					// Responding true (OK) here will let the client
-					// know we have a pty ready for input
-					req.Reply(true, nil)
-				case "window-change":
-					w, h := parseDims(req.Payload)
-					SetWinsize(npty.Fd(), w, h)
-				}
-			}
-		}()
-	*/
 
 	go func() {
 		var w, h uint32

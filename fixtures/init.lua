@@ -72,6 +72,10 @@ trigger("2", TestPrint)
 trigger("3", ExitConnection)
 trigger("4", ExecTest)
 
+write("\r\nLANG = ")
+write(getEnv("LANG"))
+write("\r\n")
+
 write("\nenter a string:")
 Str = getField()
 write("\n\n\n\r\n")
