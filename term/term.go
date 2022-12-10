@@ -2,6 +2,7 @@ package term
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -61,6 +62,20 @@ func (t *Term) WriteString(s string) {
 	_, err := io.WriteString(t.C, s)
 	if err != nil {
 		log.Println("term error writing string:", err)
+	}
+}
+
+func (t *Term) WriteByte(b byte) {
+	_, err := t.C.Write([]byte{b})
+	if err != nil {
+		log.Println("term error writing byte:", err)
+	}
+}
+
+func (t *Term) WriteRune(r rune) {
+	_, err := t.C.Write([]byte(string(r)))
+	if err != nil {
+		log.Println("term error writing rune:", err)
 	}
 }
 
@@ -182,6 +197,7 @@ func (t *Term) GetPassword() string {
 }
 
 func (t *Term) WriteFromASCII(fileName string) int {
+	var b byte
 	f, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -190,13 +206,15 @@ func (t *Term) WriteFromASCII(fileName string) int {
 	r := bufio.NewReader(f)
 
 	for {
-		b, err := r.ReadByte()
-		if err == io.EOF {
-			break
-		}
+		b, err = r.ReadByte()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
 			log.Fatal(err)
 		}
+
 		t.WriteString(string(ASCII[b]))
 	}
 	return 0
