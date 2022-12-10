@@ -64,7 +64,7 @@ func (t *Term) Init() {
 }
 
 func (t *Term) Clear() error {
-	_, err := io.WriteString(t.C, "\u001b[2J")
+	_, err := io.WriteString(t.C, "\033[2J")
 	return err
 }
 
@@ -109,7 +109,7 @@ func (t *Term) Print(lin, col int, s string) error {
 	s = string([]rune(s)[:c])
 
 	a := [][]byte{
-		[]byte("\u001b["),
+		[]byte("\033["),
 		[]byte(strconv.Itoa(lin)),
 		{';'},
 		[]byte(strconv.Itoa(col)),
@@ -232,13 +232,13 @@ func (t *Term) WriteFromASCII(fileName string) int {
 
 // ResetScreen reset terminal screen.
 func (t *Term) ResetScreen() int {
-	t.WriteString("\u001bc")
+	t.WriteString("\033c")
 	return 0
 }
 
 // Cls clear screen.
 func (t *Term) Cls() int {
-	t.WriteString("\u001b[2J")
+	t.WriteString("\033[2J")
 	return 0
 }
 
