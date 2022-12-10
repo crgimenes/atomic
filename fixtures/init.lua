@@ -73,7 +73,12 @@ trigger("3", ExitConnection)
 trigger("4", ExecTest)
 
 write("\r\nLANG = ")
-write(getEnv("LANG"))
+local lang = getEnv("LANG")
+if (lang == "") then
+    write("empty")
+else
+    write(lang)
+end
 write("\r\n")
 
 write("\nenter a string:")
