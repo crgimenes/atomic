@@ -45,11 +45,15 @@ end
 clockAux = ""
 clockInt = 0
 function Clock()
+    write("\027[s")
+
     write("\0277\27[0;0H")
     write(os.date('%Y-%m-%d %H:%M:%S UTC'))
     -- os.date("%Y-%m-%dT%H:%m:%S.000 %z"
     write("\0278")
     -- rmTrigger("clock")
+
+    write("\027[u")
 end
 
 function menu()
