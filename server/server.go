@@ -233,6 +233,18 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				s.mux.Lock()
 				ci.W, ci.H = parseDims(req.Payload)
 				s.mux.Unlock()
+			case "env":
+				err := req.Reply(true, nil)
+				if err != nil {
+					req.Reply(false, nil)
+					log.Println(err.Error())
+				}
+
+				var p struct{ Key, Value string }
+				ssh.Unmarshal(req.Payload, &p)
+				log.Printf("env: %s = %s", p.Key, p.Value)
+				req.Reply(true, nil)
+
 			default:
 				log.Printf("unknown request: %s, %q, %v\n", req.Type, req.Payload, req.WantReply)
 				err := req.Reply(false, nil)
