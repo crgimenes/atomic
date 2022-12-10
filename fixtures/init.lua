@@ -45,15 +45,15 @@ end
 clockAux = ""
 clockInt = 0
 function Clock()
-    write("\027[s")
+    write("\027[s") -- save cursor position ANSI.SYS
 
-    write("\0277\27[0;0H")
+    write("\0277\27[0;0H") -- save cursor (DEC) and move cursor to 0,0
     write(os.date('%Y-%m-%d %H:%M:%S UTC'))
     -- os.date("%Y-%m-%dT%H:%m:%S.000 %z"
-    write("\0278")
+    write("\0278") -- restore cursor (DEC)
     -- rmTrigger("clock")
 
-    write("\027[u")
+    write("\027[u") -- restore cursor position ANSI.SYS
 end
 
 function menu()
