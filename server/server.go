@@ -274,7 +274,6 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
-			fmt.Println("reading from client")
 			n, err := conn.Read(b)
 			if err != nil {
 				if err != io.EOF {

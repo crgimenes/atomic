@@ -81,11 +81,13 @@ else
 end
 write("\r\n")
 
-write("\nenter a string:")
-Str = getField()
-write("\n\n\n\r\n")
-write("[")
-write(Str)
-write("]")
-write("\n\n\n\r\n")
+while true do
+    write("\nenter a string:")
+    Str = getField()
+    write("\r\n")
+    write("[")
+    write(Str)
+    write("]")
+    write("\r\n")
+end
 -- quit()
