@@ -165,11 +165,60 @@ func (t *Term) Input(s string) {
 
 							t.WriteString("\x1b[1D")
 							return
+
+						case 'H': // home
+							if t.bufferPosition == 0 {
+								return
+							}
+							t.WriteString("\033[" + strconv.Itoa(t.bufferPosition) + "D")
+							t.bufferPosition = 0
+							return
+						case 'F': // end
+							if t.bufferPosition == len(t.inputField) {
+								return
+							}
+							t.WriteString("\033[" + strconv.Itoa(len(t.inputField)-t.bufferPosition) + "C")
+							t.bufferPosition = len(t.inputField)
+							return
+
+						case '3': // delete
+							if s[3] == '~' {
+								if t.bufferPosition == len(t.inputField) {
+									return
+								}
+								if len(t.inputField) == 0 {
+									return
+								}
+								if t.bufferPosition < len(t.inputField) {
+									if t.bufferPosition == 0 {
+										t.inputField = t.inputField[1:]
+									} else {
+										t.inputField = append(t.inputField[:t.bufferPosition], t.inputField[t.bufferPosition+1:]...)
+									}
+									// save cursor position
+									t.WriteString("\033[s")
+									// print input field from bufferPosition
+									t.WriteString(string(t.inputField[t.bufferPosition:]))
+									// print spaces to clear the rest of the line
+									t.WriteString(" ")
+									// restore cursor position
+									t.WriteString("\033[u")
+
+									if t.bufferPosition == len(t.inputField) {
+										t.bufferPosition--
+									}
+								}
+								return
+							}
+
 						}
 					}
 				}
 				return
-			case '\u007f', '\b':
+			case '\uf746': // insert
+				t.replaceInput = !t.replaceInput
+				return
+			case '\u007f', '\b': // backspace
 				if len(t.inputField) == 0 {
 					return
 				}
@@ -184,7 +233,7 @@ func (t *Term) Input(s string) {
 					if t.bufferPosition == 1 {
 						t.inputField = t.inputField[1:]
 					} else {
-						t.inputField = append(t.inputField[:t.bufferPosition], t.inputField[t.bufferPosition+1:]...)
+						t.inputField = append(t.inputField[:t.bufferPosition-1], t.inputField[t.bufferPosition:]...)
 					}
 				}
 				t.bufferPosition--
@@ -206,9 +255,22 @@ func (t *Term) Input(s string) {
 				t.inputTrigger <- struct{}{}
 				t.bufferPosition = 0
 				return
-			default:
+			case '\x01': // ctrl + a (home)
+				if t.bufferPosition == 0 {
+					return
+				}
+				t.WriteString("\033[" + strconv.Itoa(t.bufferPosition) + "D")
+				t.bufferPosition = 0
+				return
+			case '\x05': // ctrl + e (end)
+				if t.bufferPosition == len(t.inputField) {
+					return
+				}
+				t.WriteString("\033[" + strconv.Itoa(len(t.inputField)-t.bufferPosition) + "C")
+				t.bufferPosition = len(t.inputField)
+				return
 
-				t.replaceInput = false
+			default:
 				if t.replaceInput {
 					if t.bufferPosition == len(t.inputField) {
 						t.inputField = append(t.inputField, c)
