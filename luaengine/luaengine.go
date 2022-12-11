@@ -54,6 +54,7 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
 	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
 	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
+	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
 
 	return le
 }
@@ -61,6 +62,12 @@ func New(cfg config.Config) *LuaExtender {
 func (le *LuaExtender) setOutputMode(l *lua.LState) int {
 	s := l.ToString(1)
 	le.Term.SetOutputMode(s)
+	return 0
+}
+
+func (le *LuaExtender) limitInputLength(l *lua.LState) int {
+	i := l.ToInt(1)
+	le.Term.SetInputLimit(i)
 	return 0
 }
 

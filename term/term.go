@@ -492,3 +492,7 @@ func (t *Term) SetOutputMode(mode string) {
 		log.Printf("Invalid output mode: %s. Using UTF8", mode)
 	}
 }
+
+func (t *Term) SetInputLimit(limit int) {
+	t.maxInputLength = limit
+}
