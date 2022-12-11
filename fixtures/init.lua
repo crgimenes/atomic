@@ -1,7 +1,7 @@
 if (getEnv("LANG") == "") then
     setOutputMode("CP437")
 else
-    setOutputMode("UTF-8")
+    setOutputMode("UTF8")
 end
 
 cls()

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 type OutputMode int
@@ -30,6 +31,7 @@ type Term struct {
 	inputField     []rune
 	inputTrigger   chan struct{}
 	outputMode     OutputMode
+	outputSpeed    time.Duration
 }
 
 var (
@@ -98,6 +100,7 @@ func (t *Term) Init() {
 	t.inputTrigger = make(chan struct{})
 	t.outputMode = UTF8
 	t.maxInputLength = 10
+	//t.outputSpeed = time.Microsecond * 300
 }
 
 func (t *Term) Clear() error {
@@ -120,6 +123,14 @@ func (t *Term) WriteString(s string) {
 		return
 	}
 
+	if t.outputSpeed > 0 {
+		for _, r := range s {
+			t.C.Write([]byte(string(r)))
+			time.Sleep(t.outputSpeed)
+		}
+		return
+	}
+
 	_, err := io.WriteString(t.C, s)
 	if err != nil {
 		log.Println("term error writing string:", err)
@@ -127,6 +138,13 @@ func (t *Term) WriteString(s string) {
 }
 
 func (t *Term) WriteByte(b byte) {
+
+	if t.outputSpeed > 0 {
+		t.C.Write([]byte{b})
+		time.Sleep(t.outputSpeed)
+		return
+	}
+
 	_, err := t.C.Write([]byte{b})
 	if err != nil {
 		log.Println("term error writing byte:", err)
@@ -141,6 +159,12 @@ func (t *Term) WriteRune(r rune) {
 
 	if t.outputMode == CP850 {
 		t.WriteByte(UTF8_TO_CP850[r])
+		return
+	}
+
+	if t.outputSpeed > 0 {
+		t.C.Write([]byte(string(r)))
+		time.Sleep(t.outputSpeed)
 		return
 	}
 
