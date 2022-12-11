@@ -21,14 +21,15 @@ const (
 type Term struct {
 	W              int
 	H              int
+	bufferPosition int
+	maxInputLength int
 	C              io.Writer
 	captureInput   bool
 	echo           bool
 	replaceInput   bool
 	inputField     []rune
 	inputTrigger   chan struct{}
-	bufferPosition int
-	OutputMode     OutputMode
+	outputMode     OutputMode
 }
 
 var (
@@ -95,7 +96,8 @@ func removeLastRune(s []rune) []rune {
 
 func (t *Term) Init() {
 	t.inputTrigger = make(chan struct{})
-	t.OutputMode = UTF8
+	t.outputMode = UTF8
+	t.maxInputLength = 10
 }
 
 func (t *Term) Clear() error {
@@ -104,14 +106,14 @@ func (t *Term) Clear() error {
 }
 
 func (t *Term) WriteString(s string) {
-	if t.OutputMode == CP437 {
+	if t.outputMode == CP437 {
 		for _, r := range s {
 			t.WriteByte(UTF8_TO_CP437[r])
 		}
 		return
 	}
 
-	if t.OutputMode == CP850 {
+	if t.outputMode == CP850 {
 		for _, r := range s {
 			t.WriteByte(UTF8_TO_CP850[r])
 		}
@@ -132,12 +134,12 @@ func (t *Term) WriteByte(b byte) {
 }
 
 func (t *Term) WriteRune(r rune) {
-	if t.OutputMode == CP437 {
+	if t.outputMode == CP437 {
 		t.WriteByte(UTF8_TO_CP437[r])
 		return
 	}
 
-	if t.OutputMode == CP850 {
+	if t.outputMode == CP850 {
 		t.WriteByte(UTF8_TO_CP850[r])
 		return
 	}
@@ -268,7 +270,6 @@ func (t *Term) Input(s string) {
 								}
 								return
 							}
-
 						}
 					}
 				}
@@ -329,6 +330,10 @@ func (t *Term) Input(s string) {
 				return
 
 			default:
+				if t.maxInputLength > 0 && len(t.inputField) >= t.maxInputLength {
+					return
+				}
+
 				if t.replaceInput {
 					if t.bufferPosition == len(t.inputField) {
 						t.inputField = append(t.inputField, c)
@@ -477,13 +482,13 @@ func (t *Term) Write(s string) int {
 func (t *Term) SetOutputMode(mode string) {
 	switch mode {
 	case "UTF8":
-		t.OutputMode = UTF8
+		t.outputMode = UTF8
 	case "CP437":
-		t.OutputMode = CP437
+		t.outputMode = CP437
 	case "CP850":
-		t.OutputMode = CP850
+		t.outputMode = CP850
 	default:
-		t.OutputMode = UTF8
+		t.outputMode = UTF8
 		log.Printf("Invalid output mode: %s. Using UTF8", mode)
 	}
 }

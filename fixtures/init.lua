@@ -16,8 +16,8 @@ write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
 write("\r\n")
 
-
 writeFromASCII("nonfree/squiddy.ans")
+write("\r\n")
 
 Str = ""
 
