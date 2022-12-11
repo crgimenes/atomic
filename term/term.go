@@ -21,7 +21,7 @@ type Term struct {
 }
 
 var (
-	ASCII = [256]rune{
+	ASCII_TO_UTF8 = [256]rune{
 		'\x00', '☺', '☻', '♥', '♦', '♣', '♠', '•', '\b', '\t', '\n', '♂', '♀', '\r', '♫', '☼',
 		'►', '◄', '↕', '‼', '¶', '§', '▬', '↨', '↑', '↓', '→', '\x1b', '∟', '↔', '▲', '▼',
 		' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
@@ -40,12 +40,12 @@ var (
 		'≡', '±', '≥', '≤', '⌠', '⌡', '÷', '≈', '°', '∙', '·', '√', 'ⁿ', '²', '■', '\u00a0',
 	}
 
-	ASCII2UTF8 = make(map[rune]byte, 256)
+	UTF8_TO_ASCII_CP437 = make(map[rune]byte, 256)
 )
 
 func Init() {
-	for i, r := range ASCII {
-		ASCII2UTF8[r] = byte(i)
+	for i, r := range ASCII_TO_UTF8 {
+		UTF8_TO_ASCII_CP437[r] = byte(i)
 	}
 }
 
@@ -225,7 +225,7 @@ func (t *Term) WriteFromASCII(fileName string) int {
 			log.Fatal(err)
 		}
 
-		t.WriteString(string(ASCII[b]))
+		t.WriteString(string(ASCII_TO_UTF8[b]))
 	}
 	return 0
 }
