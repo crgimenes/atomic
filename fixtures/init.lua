@@ -1,7 +1,5 @@
 if (getEnv("LANG") == "") then
-    setOutputMode("CP437")
-else
-    setOutputMode("UTF8")
+    setOutputMode("CP437") -- default to UTF8
 end
 
 cls()
@@ -54,6 +52,7 @@ clockAux = ""
 clockInt = 0
 function Clock()
     write("\027[s") -- save cursor position ANSI.SYS
+    write("\027[?25l") -- hide cursor
 
     write("\0277\27[0;0H") -- save cursor (DEC) and move cursor to 0,0
     write(os.date('%Y-%m-%d %H:%M:%S UTC'))
@@ -61,6 +60,7 @@ function Clock()
     write("\0278") -- restore cursor (DEC)
     -- rmTrigger("clock")
 
+    write("\027[?25h") -- show cursor
     write("\027[u") -- restore cursor position ANSI.SYS
 end
 
