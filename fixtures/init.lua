@@ -1,3 +1,9 @@
+if (getEnv("LANG") == "") then
+    setOutputMode("CP437")
+else
+    setOutputMode("UTF-8")
+end
+
 cls()
 write("\r\nthis is a test write to client instance\r\n")
 write(" ██████╗██████╗  ██████╗    ███████╗████████╗██╗   ██████╗ ██████╗\r\n")
@@ -14,6 +20,8 @@ write("\r\n")
 writeFromASCII("nonfree/squiddy.ans")
 
 Str = ""
+
+write("output test with accented characters: áéíóú äëïöü ãõ ç\r\n")
 
 function ExecTest()
     exec("zsh")

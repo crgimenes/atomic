@@ -10,6 +10,14 @@ import (
 	"strconv"
 )
 
+type OutputMode int
+
+const (
+	UTF8 OutputMode = iota
+	CP437
+	CP850
+)
+
 type Term struct {
 	W              int
 	H              int
@@ -20,10 +28,11 @@ type Term struct {
 	inputField     []rune
 	inputTrigger   chan struct{}
 	bufferPosition int
+	OutputMode     OutputMode
 }
 
 var (
-	ASCII_TO_UTF8 = [256]rune{
+	CP437_TO_UTF8 = [256]rune{
 		'\x00', '☺', '☻', '♥', '♦', '♣', '♠', '•', '\b', '\t', '\n', '♂', '♀', '\r', '♫', '☼',
 		'►', '◄', '↕', '‼', '¶', '§', '▬', '↨', '↑', '↓', '→', '\x1b', '∟', '↔', '▲', '▼',
 		' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
@@ -42,12 +51,36 @@ var (
 		'≡', '±', '≥', '≤', '⌠', '⌡', '÷', '≈', '°', '∙', '·', '√', 'ⁿ', '²', '■', '\u00a0',
 	}
 
-	UTF8_TO_ASCII_CP437 = make(map[rune]byte, 256)
+	CP850_TO_UTF8 = [256]rune{
+		'\x00', '☺', '☻', '♥', '♦', '♣', '♠', '•', '\b', '\t', '\n', '♂', '♀', '\r', '♫', '☼',
+		'►', '◄', '↕', '‼', '¶', '§', '▬', '↨', '↑', '↓', '→', '\x1b', '∟', '↔', '▲', '▼',
+		' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
+		'@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+		'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
+		'`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+		'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~', '⌂',
+		'€', '\u0081', 'é', 'â', 'ä', 'à', 'å', 'ç', 'ê', 'ë', 'è', 'ï', 'î', 'ì', 'Ä', 'Å',
+		'É', 'æ', 'Æ', 'ô', 'ö', 'ò', 'û', 'ù', 'ÿ', 'Ö', 'Ü', 'ø', '£', 'Ø', '×', 'ƒ',
+		'á', 'í', 'ó', 'ú', 'ñ', 'Ñ', 'ª', 'º', '¿', '®', '¬', '½', '¼', '¡', '«', '»',
+		'░', '▒', '▓', '│', '┤', 'Á', 'Â', 'À', '©', '╣', '║', '╗', '╝', '¢', '¥', '┐',
+		'└', '┴', '┬', '├', '─', '┼', 'ã', 'Ã', '╚', '╔', '╩', '╦', '╠', '═', '╬', '¤',
+		'\u00f0', 'Ð', 'Ê', 'Ë', 'È', 'ı', 'Í', 'Î', 'Ï', '┘', '┌', '█', '▄', '¦', 'Ì', '▀',
+		'Ó', 'ß', 'Ô', 'Ò', 'õ', 'Õ', 'µ', 'þ', 'Þ', 'Ú', 'Û', 'Ù', 'ý', 'Ý', '¯', '´',
+		'\u00ad', '±', '‗', '¾', '¶', '§', '÷', '¸', '°', '¨', '·', '¹', '³', '²', '■', '\u00a0',
+	}
+
+	UTF8_TO_CP437 = make(map[rune]byte, 256)
+	UTF8_TO_CP850 = make(map[rune]byte, 256)
 )
 
-func Init() {
-	for i, r := range ASCII_TO_UTF8 {
-		UTF8_TO_ASCII_CP437[r] = byte(i)
+func init() {
+	for i, r := range CP437_TO_UTF8 {
+		UTF8_TO_CP437[r] = byte(i)
+	}
+
+	for i, r := range CP850_TO_UTF8 {
+		UTF8_TO_CP850[r] = byte(i)
 	}
 }
 
@@ -62,6 +95,7 @@ func removeLastRune(s []rune) []rune {
 
 func (t *Term) Init() {
 	t.inputTrigger = make(chan struct{})
+	t.OutputMode = UTF8
 }
 
 func (t *Term) Clear() error {
@@ -70,6 +104,20 @@ func (t *Term) Clear() error {
 }
 
 func (t *Term) WriteString(s string) {
+	if t.OutputMode == CP437 {
+		for _, r := range s {
+			t.WriteByte(UTF8_TO_CP437[r])
+		}
+		return
+	}
+
+	if t.OutputMode == CP850 {
+		for _, r := range s {
+			t.WriteByte(UTF8_TO_CP850[r])
+		}
+		return
+	}
+
 	_, err := io.WriteString(t.C, s)
 	if err != nil {
 		log.Println("term error writing string:", err)
@@ -84,6 +132,16 @@ func (t *Term) WriteByte(b byte) {
 }
 
 func (t *Term) WriteRune(r rune) {
+	if t.OutputMode == CP437 {
+		t.WriteByte(UTF8_TO_CP437[r])
+		return
+	}
+
+	if t.OutputMode == CP850 {
+		t.WriteByte(UTF8_TO_CP850[r])
+		return
+	}
+
 	_, err := t.C.Write([]byte(string(r)))
 	if err != nil {
 		log.Println("term error writing rune:", err)
@@ -378,7 +436,7 @@ func (t *Term) WriteFromASCII(fileName string) int {
 			log.Fatal(err)
 		}
 
-		t.WriteString(string(ASCII_TO_UTF8[b]))
+		t.WriteString(string(CP437_TO_UTF8[b]))
 	}
 	return 0
 }
@@ -414,4 +472,18 @@ func (t *Term) MoveCursor(x, y int) int {
 func (t *Term) Write(s string) int {
 	t.WriteString(s)
 	return 0
+}
+
+func (t *Term) SetOutputMode(mode string) {
+	switch mode {
+	case "UTF8":
+		t.OutputMode = UTF8
+	case "CP437":
+		t.OutputMode = CP437
+	case "CP850":
+		t.OutputMode = CP850
+	default:
+		t.OutputMode = UTF8
+		log.Printf("Invalid output mode: %s. Using UTF8", mode)
+	}
 }

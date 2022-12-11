@@ -53,8 +53,15 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
 	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
 	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
+	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
 
 	return le
+}
+
+func (le *LuaExtender) setOutputMode(l *lua.LState) int {
+	s := l.ToString(1)
+	le.Term.SetOutputMode(s)
+	return 0
 }
 
 func (le *LuaExtender) Close() error {
