@@ -4,7 +4,7 @@ before:
     - go generate ./...
 builds:
   - id: atomic
-    main: ./cmd/atomic/main.go
+    main: ./main.go
     ldflags: -s -w
     binary: atomic
     env:
