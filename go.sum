@@ -1,5 +1,3 @@
-crg.eti.br/go/config v1.4.9 h1:vOmjCDF45gmH5B/ZZWHsQ34vh1koIww3y5KmvSTplJg=
-crg.eti.br/go/config v1.4.9/go.mod h1:cZpy1pvFvaql9gmFC5Aha4bt5EPKFgEce6M4tGxXXmE=
 crg.eti.br/go/config v1.4.10 h1:K3pUpDwmT0oqiYlcM8ItwkuSeuzmjxSTB9hMfqbH9PI=
 crg.eti.br/go/config v1.4.10/go.mod h1:cZpy1pvFvaql9gmFC5Aha4bt5EPKFgEce6M4tGxXXmE=
 github.com/creack/pty v1.1.18 h1:n56/Zwd5o6whRC5PMGretI4IdRLlmBXYNjScPaBgsbY=
