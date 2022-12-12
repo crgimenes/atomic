@@ -6,8 +6,8 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/crgimenes/atomic/config"
-	"github.com/crgimenes/atomic/database"
+	"crg.eti.br/go/atomic/config"
+	"crg.eti.br/go/atomic/database"
 	"github.com/gosimple/slug"
 )
 

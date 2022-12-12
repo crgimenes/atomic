@@ -13,10 +13,10 @@ import (
 	"time"
 	"unsafe"
 
+	"crg.eti.br/go/atomic/client"
+	"crg.eti.br/go/atomic/config"
+	"crg.eti.br/go/atomic/term"
 	"github.com/creack/pty"
-	"github.com/crgimenes/atomic/client"
-	"github.com/crgimenes/atomic/config"
-	"github.com/crgimenes/atomic/term"
 	lua "github.com/yuin/gopher-lua"
 	parse "github.com/yuin/gopher-lua/parse"
 )

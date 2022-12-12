@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/crgimenes/atomic/config"
-	"github.com/crgimenes/atomic/server"
+	"crg.eti.br/go/atomic/config"
+	"crg.eti.br/go/atomic/server"
 )
 
 func main() {

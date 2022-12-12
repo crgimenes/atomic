@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/crgimenes/atomic/client"
-	"github.com/crgimenes/atomic/config"
-	"github.com/crgimenes/atomic/luaengine"
+	"crg.eti.br/go/atomic/client"
+	"crg.eti.br/go/atomic/config"
+	"crg.eti.br/go/atomic/luaengine"
 	lua "github.com/yuin/gopher-lua"
 	"golang.org/x/crypto/ssh"
 )

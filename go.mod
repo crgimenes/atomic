@@ -1,4 +1,4 @@
-module github.com/crgimenes/atomic
+module crg.eti.br/go/atomic
 
 go 1.19
 

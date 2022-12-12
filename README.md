@@ -1,6 +1,6 @@
 # Atomic
 
-[![GoDoc](https://godoc.org/github.com/crgimenes/atomic?status.png)](https://pkg.go.dev/github.com/crgimenes/atomic?tab=doc)
+[![GoDoc](https://godoc.org/crg.eti.br/go/atomic?status.png)](https://pkg.go.dev/crg.eti.br/go/atomic?tab=doc)
 [![Go project version](https://badge.fury.io/go/github.com%2Fcrgimenes%2Fatomic.svg)](https://badge.fury.io/go/github.com%2Fcrgimenes%2Fatomic)
 [![MIT Licensed](https://img.shields.io/badge/license-MIT-green.svg)](https://tldrlegal.com/license/mit-license)
 
