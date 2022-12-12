@@ -6,7 +6,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"crg.eti.br/go/atomic/config"
+	goconfig "crg.eti.br/go/atomic/config"
 	"crg.eti.br/go/atomic/database"
 	"github.com/gosimple/slug"
 )
@@ -20,7 +20,7 @@ type Bucket struct {
 	name string
 }
 
-func NewDatabase(cfg config.Config) (Database, error) {
+func NewDatabase(cfg goconfig.Config) (Database, error) {
 	path, err := filepath.Abs(cfg.DatabasePath)
 	if err != nil {
 		return Database{}, err

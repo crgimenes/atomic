@@ -3,8 +3,8 @@ module crg.eti.br/go/atomic
 go 1.19
 
 require (
+	crg.eti.br/go/config v1.4.10
 	github.com/creack/pty v1.1.18
-	github.com/crgimenes/goconfig v1.4.7
 	github.com/gosimple/slug v1.13.1
 	github.com/yuin/gopher-lua v0.0.0-20221210110428-332342483e3f
 	golang.org/x/crypto v0.4.0

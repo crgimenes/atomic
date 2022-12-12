@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/crgimenes/goconfig"
-	_ "github.com/crgimenes/goconfig/ini"
+	goconfig "crg.eti.br/go/config"
+	_ "crg.eti.br/go/config/ini"
 )
 
 type Config struct {
