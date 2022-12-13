@@ -4,6 +4,7 @@ package main
 // nc localhost 8080
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/kr/pty"
@@ -21,6 +23,18 @@ type out struct {
 	connections map[net.Conn]struct{}
 }
 
+var (
+	o       = out{}
+	listner net.Listener
+	err     error
+)
+
+func isClosedConnErr(err error) bool {
+	return errors.Is(err, net.ErrClosed) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, syscall.EPIPE)
+}
+
 func (o out) Write(p []byte) (n int, err error) {
 	n = len(p)
 
@@ -29,18 +43,16 @@ func (o out) Write(p []byte) (n int, err error) {
 	for c := range o.connections {
 		_, err := c.Write(p)
 		if err != nil {
+			if !isClosedConnErr(err) {
+				fmt.Println("Error writing:", err.Error())
+			}
+			c.Close()
 			delete(o.connections, c)
 		}
 	}
 
 	return n, nil
 }
-
-var (
-	o       = out{}
-	listner net.Listener
-	err     error
-)
 
 func runCmd() error {
 	c := exec.Command(os.Args[1], os.Args[2:]...)
@@ -82,19 +94,29 @@ func runCmd() error {
 // Handles incoming requests.
 func handleRequest(conn net.Conn) {
 	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading:", err.Error())
-		conn.Close()
-		return
-	}
-	switch string(buf[:n]) {
-	case "close":
-		conn.Close()
-		delete(o.connections, conn)
-	case "clear":
-		conn.Write([]byte("\033[2J"))
-		conn.Write([]byte("\033[0;0H"))
+	for {
+		n, err := conn.Read(buf)
+		if err != nil {
+			if !isClosedConnErr(err) {
+				fmt.Println("Error reading:", err.Error())
+			}
+			conn.Close()
+			delete(o.connections, conn)
+			return
+		}
+
+		cmd := strings.TrimSpace(string(buf[:n]))
+
+		fmt.Printf("cmd: %q\r\n", cmd)
+
+		switch cmd {
+		case "close", "exit":
+			conn.Close()
+			delete(o.connections, conn)
+			return
+		case "clear":
+			conn.Write([]byte("\033[2J\033[0;0H"))
+		}
 	}
 }
 
@@ -126,8 +148,11 @@ func main() {
 	for {
 		conn, err := listner.Accept()
 		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
-			os.Exit(1)
+			if !isClosedConnErr(err) {
+				fmt.Println("Error accepting: ", err.Error())
+				os.Exit(1)
+			}
+			return
 		}
 
 		o.connections[conn] = struct{}{}
