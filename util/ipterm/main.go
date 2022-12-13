@@ -19,12 +19,12 @@ import (
 	"golang.org/x/term"
 )
 
-type out struct {
-	connections map[net.Conn]struct{}
+type output struct {
+	clients map[net.Conn]struct{}
 }
 
 var (
-	o       = out{}
+	out     = output{}
 	listner net.Listener
 	err     error
 )
@@ -35,19 +35,19 @@ func isClosedConnErr(err error) bool {
 		errors.Is(err, syscall.EPIPE)
 }
 
-func (o out) Write(p []byte) (n int, err error) {
+func (o output) Write(p []byte) (n int, err error) {
 	n = len(p)
 
 	fmt.Print(string(p))
 
-	for c := range o.connections {
+	for c := range o.clients {
 		_, err := c.Write(p)
 		if err != nil {
 			if !isClosedConnErr(err) {
 				fmt.Println("Error writing:", err.Error())
 			}
 			c.Close()
-			delete(o.connections, c)
+			delete(o.clients, c)
 		}
 	}
 
@@ -86,7 +86,7 @@ func runCmd() error {
 
 	// Copy stdin to the pty and the pty to stdout.
 	go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
-	_, _ = io.Copy(o, ptmx)
+	_, _ = io.Copy(out, ptmx)
 
 	return nil
 }
@@ -101,7 +101,7 @@ func handleRequest(conn net.Conn) {
 				fmt.Println("Error reading:", err.Error())
 			}
 			conn.Close()
-			delete(o.connections, conn)
+			delete(out.clients, conn)
 			return
 		}
 
@@ -112,7 +112,7 @@ func handleRequest(conn net.Conn) {
 		switch cmd {
 		case "close", "exit":
 			conn.Close()
-			delete(o.connections, conn)
+			delete(out.clients, conn)
 			return
 		case "clear":
 			conn.Write([]byte("\033[2J\033[0;0H"))
@@ -122,7 +122,7 @@ func handleRequest(conn net.Conn) {
 
 func main() {
 
-	o.connections = make(map[net.Conn]struct{})
+	out.clients = make(map[net.Conn]struct{})
 
 	go func() {
 		err := runCmd()
@@ -155,13 +155,13 @@ func main() {
 			return
 		}
 
-		o.connections[conn] = struct{}{}
+		out.clients[conn] = struct{}{}
 		go handleRequest(conn)
 	}
 }
 
 func closeConn() {
-	for c := range o.connections {
+	for c := range out.clients {
 		c.Write([]byte("\r\ncloseing connection\r\n"))
 		c.Close()
 	}
