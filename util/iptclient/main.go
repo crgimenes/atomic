@@ -74,5 +74,17 @@ func main() {
 	}()
 
 	// read from socket and write to stdout
-	_, _ = io.Copy(os.Stdout, conn)
+	// _, _ = io.Copy(os.Stdout, conn)
+	b := make([]byte, 1024)
+	for {
+		n, err := conn.Read(b)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			panic(err)
+		}
+		_, _ = os.Stdout.Write(b[:n])
+
+	}
 }

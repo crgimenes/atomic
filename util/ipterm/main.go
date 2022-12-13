@@ -35,6 +35,15 @@ func isClosedConnErr(err error) bool {
 		errors.Is(err, syscall.EPIPE)
 }
 
+func closeConn() {
+	for c := range out.clients {
+		c.Write([]byte("\r\ncloseing connection\r\n"))
+		c.Close()
+	}
+
+	listner.Close()
+}
+
 func (o output) Write(p []byte) (n int, err error) {
 	n = len(p)
 
@@ -55,6 +64,9 @@ func (o output) Write(p []byte) (n int, err error) {
 }
 
 func runCmd() error {
+	if len(os.Args) < 2 {
+		return errors.New("no command specified")
+	}
 	c := exec.Command(os.Args[1], os.Args[2:]...)
 
 	// Start the command with a pty.
@@ -158,13 +170,4 @@ func main() {
 		out.clients[conn] = struct{}{}
 		go handleRequest(conn)
 	}
-}
-
-func closeConn() {
-	for c := range out.clients {
-		c.Write([]byte("\r\ncloseing connection\r\n"))
-		c.Close()
-	}
-
-	listner.Close()
 }
