@@ -1,8 +1,5 @@
 package main
 
-// go run main.go
-// nc localhost 8080
-
 import (
 	"errors"
 	"fmt"
@@ -53,7 +50,7 @@ func (o output) Write(p []byte) (n int, err error) {
 		_, err := c.Write(p)
 		if err != nil {
 			if !isClosedConnErr(err) {
-				fmt.Println("Error writing:", err.Error())
+				fmt.Println("error writing:", err.Error())
 			}
 			c.Close()
 			delete(o.clients, c)
@@ -119,8 +116,6 @@ func handleRequest(conn net.Conn) {
 
 		cmd := strings.TrimSpace(string(buf[:n]))
 
-		fmt.Printf("cmd: %q\r\n", cmd)
-
 		switch cmd {
 		case "close", "exit":
 			conn.Close()
@@ -161,7 +156,7 @@ func main() {
 		conn, err := listner.Accept()
 		if err != nil {
 			if !isClosedConnErr(err) {
-				fmt.Println("Error accepting: ", err.Error())
+				fmt.Println("error accepting: ", err.Error())
 				os.Exit(1)
 			}
 			return
