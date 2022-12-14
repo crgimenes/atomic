@@ -64,21 +64,29 @@ func main() {
 				os.Exit(0)
 			case ":":
 				connEcho = false
-				// go to botton of terminal
-				fmt.Print("\033[999B")
-				// clear line
-				fmt.Print("\033[2K")
+				_, _ = os.Stdout.Write([]byte("\033[999B\033[2K"))
 				// read line
-				term := term.NewTerminal(os.Stdin, ": ")
-				line, err := term.ReadLine()
+				nterm := term.NewTerminal(os.Stdin, ":")
+				line, err := nterm.ReadLine()
 				if err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				fmt.Printf("read %q %x\r\n", line, line)
 				b = []byte(line)
 				n = len(line)
 				connEcho = true
+				switch line {
+				case "q", "Q", "quit", "exit":
+					// restore terminal
+					_ = term.Restore(int(os.Stdin.Fd()), oldState)
+					// close connection
+					if conn != nil {
+						_ = conn.Close()
+					}
+					os.Exit(0)
+				default:
+					_, _ = os.Stdout.Write([]byte("\033[999B\033[2Kunknown command: " + line + "\r\n"))
+				}
 			}
 
 			if conn == nil {
@@ -95,7 +103,7 @@ func main() {
 		if err != nil {
 			fmt.Printf("error dialing: %s\r\n", err.Error())
 			fmt.Printf("retrying in 5 seconds\r\n")
-			time.Sleep(5 * time.Second)
+			time.Sleep(3 * time.Second)
 
 			continue
 		}
