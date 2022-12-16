@@ -3,6 +3,7 @@ if (getEnv("LANG") == "") then
 end
 
 cls()
+write("\027[0;0H") -- move cursor to 0,0H
 write("\r\nthis is a test write to client instance\r\n")
 write(" ██████╗██████╗  ██████╗    ███████╗████████╗██╗   ██████╗ ██████╗\r\n")
 write("██╔════╝██╔══██╗██╔════╝    ██╔════╝╚══██╔══╝██║   ██╔══██╗██╔══██╗\r\n")
@@ -14,8 +15,8 @@ write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
 write("\r\n")
 
-writeFromASCII("nonfree/squiddy.ans")
-write("\r\n")
+-- writeFromASCII("nonfree/squiddy.ans")
+-- write("\r\n")
 
 Str = ""
 
