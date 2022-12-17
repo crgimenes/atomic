@@ -14,6 +14,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// get SQLite version
 	var version string
 	err = db.Get(&version, "SELECT sqlite_version()")

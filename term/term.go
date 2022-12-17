@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,7 +32,7 @@ type Term struct {
 	inputField     []rune
 	inputTrigger   chan struct{}
 	outputMode     OutputMode
-	outputSpeed    time.Duration
+	outputDelay    time.Duration
 }
 
 var (
@@ -123,10 +124,10 @@ func (t *Term) WriteString(s string) {
 		return
 	}
 
-	if t.outputSpeed > 0 {
+	if t.outputDelay > 0 {
 		for _, r := range s {
 			t.C.Write([]byte(string(r)))
-			time.Sleep(t.outputSpeed)
+			time.Sleep(t.outputDelay)
 		}
 		return
 	}
@@ -139,9 +140,9 @@ func (t *Term) WriteString(s string) {
 
 func (t *Term) WriteByte(b byte) {
 
-	if t.outputSpeed > 0 {
+	if t.outputDelay > 0 {
 		t.C.Write([]byte{b})
-		time.Sleep(t.outputSpeed)
+		time.Sleep(t.outputDelay)
 		return
 	}
 
@@ -162,9 +163,9 @@ func (t *Term) WriteRune(r rune) {
 		return
 	}
 
-	if t.outputSpeed > 0 {
+	if t.outputDelay > 0 {
 		t.C.Write([]byte(string(r)))
-		time.Sleep(t.outputSpeed)
+		time.Sleep(t.outputDelay)
 		return
 	}
 
@@ -504,8 +505,9 @@ func (t *Term) Write(s string) int {
 }
 
 func (t *Term) SetOutputMode(mode string) {
+	mode = strings.ToUpper(mode)
 	switch mode {
-	case "UTF8":
+	case "UTF8", "UTF-8":
 		t.outputMode = UTF8
 	case "CP437":
 		t.outputMode = CP437
@@ -513,10 +515,14 @@ func (t *Term) SetOutputMode(mode string) {
 		t.outputMode = CP850
 	default:
 		t.outputMode = UTF8
-		log.Printf("Invalid output mode: %s. Using UTF8", mode)
+		log.Printf("Invalid output mode: %s. Using UTF-8", mode)
 	}
 }
 
 func (t *Term) SetInputLimit(limit int) {
 	t.maxInputLength = limit
+}
+
+func (t *Term) SetOutputDelay(delay int) {
+	t.outputDelay = time.Duration(delay) * time.Millisecond
 }

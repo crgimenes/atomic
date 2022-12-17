@@ -1,6 +1,10 @@
 if (getEnv("LANG") == "") then
-    setOutputMode("CP437") -- default to UTF8
+    setOutputMode("CP850")
+    -- setOutputMode("CP437")
+    -- setOutputMode("UTF-8") -- default
 end
+
+setOutputDelay(1) -- 1ms delay between each character
 
 cls()
 write("\027[0;0H") -- move cursor to 0,0H
@@ -15,12 +19,14 @@ write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
 write("\r\n")
 
--- writeFromASCII("nonfree/squiddy.ans")
--- write("\r\n")
+writeFromASCII("nonfree/squiddy.ans")
+write("\r\n")
 
 Str = ""
 
 write("output test with accented characters: áéíóú äëïöü ãõ ç\r\n")
+
+setOutputDelay(0) -- no delay between each character
 
 function ExecTest()
     exec("zsh")

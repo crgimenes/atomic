@@ -55,8 +55,15 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
 	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
 	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
+	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
 
 	return le
+}
+
+func (le *LuaExtender) setOutputDelay(l *lua.LState) int {
+	i := l.ToInt(1)
+	le.Term.SetOutputDelay(i)
+	return 0
 }
 
 func (le *LuaExtender) setOutputMode(l *lua.LState) int {
