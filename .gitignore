@@ -22,4 +22,5 @@ notas.txt
 db
 .DS_Store
 authorized_keys
+atomic.db
 
