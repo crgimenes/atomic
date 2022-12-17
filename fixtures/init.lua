@@ -4,7 +4,7 @@ if (getEnv("LANG") == "") then
     -- setOutputMode("UTF-8") -- default
 end
 
-setOutputDelay(1) -- 1ms delay between each character
+-- setOutputDelay(1) -- 1ms delay between each character
 
 cls()
 write("\027[0;0H") -- move cursor to 0,0H
@@ -26,7 +26,7 @@ Str = ""
 
 write("output test with accented characters: áéíóú äëïöü ãõ ç\r\n")
 
-setOutputDelay(0) -- no delay between each character
+-- setOutputDelay(0) -- no delay between each character
 
 function ExecTest()
     exec("zsh")
@@ -58,6 +58,7 @@ end
 clockAux = ""
 clockInt = 0
 function Clock()
+    -- setOutputDelay(0)
     write("\027[s") -- save cursor position ANSI.SYS
     write("\027[?25l") -- hide cursor
 
@@ -69,6 +70,7 @@ function Clock()
 
     write("\027[?25h") -- show cursor
     write("\027[u") -- restore cursor position ANSI.SYS
+    -- setOutputDelay(1)
 end
 
 function menu()
@@ -76,16 +78,37 @@ function menu()
     write("[2] print test string\r\n")
     write("[3] quit\r\n")
     write("[4] zsh\r\n")
+    write("[5] Show Term parameters\r\n")
     write("choose an option\r\n")
 end
 
+function ShowTerm()
+    write("\r\nTERM:")
+    local lang = getEnv("LANG")
+    write(lang)
+    write("\r\nOUTPUT MODE:")
+    write(getOutputMode())
+    write("\r\n")
+    menu()
+end
+
+function ShowSquiddy()
+    writeFromASCII("nonfree/squiddy.ans")
+    write("\r\n")
+    menu()
+end
+
 menu()
-timer("clock", 500, Clock)
+timer("clock", 2100, Clock)
 
 trigger("1", ToggleEcho)
 trigger("2", TestPrint)
 trigger("3", ExitConnection)
 trigger("4", ExecTest)
+trigger("5", ShowTerm)
+trigger("6", ShowSquiddy)
+
+
 
 write("\r\nLANG = ")
 local lang = getEnv("LANG")

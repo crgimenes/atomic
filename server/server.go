@@ -14,6 +14,7 @@ import (
 	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
 	"crg.eti.br/go/atomic/luaengine"
+	"crg.eti.br/go/atomic/term"
 	lua "github.com/yuin/gopher-lua"
 	"golang.org/x/crypto/ssh"
 )
@@ -203,8 +204,26 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		return
 	}
 
-	l := luaengine.New(s.cfg)
-	ci := client.NewInstance(conn)
+	term := term.Term{
+		C:              conn,
+		InputTrigger:   make(chan struct{}),
+		OutputMode:     term.UTF8,
+		MaxInputLength: 10,
+	}
+	le := luaengine.New(s.cfg)
+	ci := client.NewInstance(conn, term)
+	le.Ci = ci
+	le.Proto = s.proto
+	if s.proto == nil {
+		//TODO: move to main
+		proto, err := le.Compile(s.cfg.InitBBSFile)
+		if err != nil {
+			log.Println(err.Error())
+			os.Exit(1)
+		}
+		le.Proto = proto
+		s.proto = proto
+	}
 
 	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
@@ -212,6 +231,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			// log.Printf("%q %q", req.Type, req.Payload)
 			switch req.Type {
 			case "shell":
+				fmt.Println("shell request")
 				// We only accept the default shell
 				// (i.e. no command in the Payload)
 				if len(req.Payload) == 0 {
@@ -221,10 +241,18 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 						return
 					}
 				}
+
+				err = le.InitState()
+				if err != nil {
+					log.Printf("can't open %v file, %v\n", s.cfg.InitBBSFile, err.Error())
+					os.Exit(1)
+				}
+
 			case "pty-req":
+				fmt.Println("pty-req request")
 				termLen := req.Payload[3]
 				s.mux.Lock()
-				ci.W, ci.H = parseDims(req.Payload[termLen+4:])
+				ci.Term.W, ci.Term.H = parseDims(req.Payload[termLen+4:])
 				s.mux.Unlock()
 				err := req.Reply(true, nil)
 				if err != nil {
@@ -232,10 +260,12 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					return
 				}
 			case "window-change":
+				fmt.Println("window-change request")
 				s.mux.Lock()
-				ci.W, ci.H = parseDims(req.Payload)
+				ci.Term.W, ci.Term.H = parseDims(req.Payload)
 				s.mux.Unlock()
 			case "env":
+				fmt.Println("env request")
 				err := req.Reply(true, nil)
 				if err != nil {
 					req.Reply(false, nil)
@@ -257,6 +287,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				req.Reply(true, nil)
 
 			default:
+				fmt.Println("default request")
 				log.Printf("unknown request: %s, %q, %v\n", req.Type, req.Payload, req.WantReply)
 				err := req.Reply(false, nil)
 				if err != nil {
@@ -270,7 +301,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		b := make([]byte, 8)
 
 		for {
-			if l.ExternalExec {
+			if le.ExternalExec {
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
@@ -282,29 +313,18 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				break
 			}
 			k := string(b[:n])
-			ok, err := l.RunTrigger(k)
+			ok, err := le.RunTrigger(k)
 			if err != nil {
 				log.Println("error RunTrigger", err.Error())
 				break
 			}
 			if !ok {
-				l.Input(string(b[:n]))
+				le.Input(string(b[:n]))
 			}
 		}
 		ci.IsConnected = false
 	}()
 
-	l.Proto = s.proto
-	if s.proto == nil {
-		//TODO: move to main
-		proto, err := l.Compile(s.cfg.InitBBSFile)
-		if err != nil {
-			log.Println(err.Error())
-			os.Exit(1)
-		}
-		l.Proto = proto
-		s.proto = proto
-	}
 	/*
 		if l.Proto == nil {
 			proto, err := l.Compile(s.cfg.InitBBSFile)
@@ -316,16 +336,18 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		}
 	*/
 
-	err = l.InitState(ci)
-	if err != nil {
-		log.Printf("can't open %v file, %v\n", s.cfg.InitBBSFile, err.Error())
-		os.Exit(1)
-	}
+	/*
+		err = le.InitState()
+		if err != nil {
+			log.Printf("can't open %v file, %v\n", s.cfg.InitBBSFile, err.Error())
+			os.Exit(1)
+		}
+	*/
 }
 
 // parseDims extracts terminal dimensions (width x height) from the provided buffer.
-func parseDims(b []byte) (uint32, uint32) {
-	w := binary.BigEndian.Uint32(b)
-	h := binary.BigEndian.Uint32(b[4:])
+func parseDims(b []byte) (int, int) {
+	w := int(binary.BigEndian.Uint32(b))
+	h := int(binary.BigEndian.Uint32(b[4:]))
 	return w, h
 }

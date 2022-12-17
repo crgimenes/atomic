@@ -1,14 +1,9 @@
 package client
 
 import (
+	"crg.eti.br/go/atomic/term"
 	"golang.org/x/crypto/ssh"
 )
-
-type LuaEngine interface {
-	InitState(source string, ci *Instance) error
-	Input(c string)
-	RunTrigger(name string) (bool, error)
-}
 
 type KeyValue struct {
 	Key   string
@@ -16,18 +11,16 @@ type KeyValue struct {
 }
 
 type Instance struct {
-	Le          LuaEngine
+	Term        term.Term
 	Conn        ssh.Channel
-	H, W        uint32
 	IsConnected bool
 	Environment map[string]string
 }
 
-func NewInstance(conn ssh.Channel) *Instance {
-	return &Instance{
+func NewInstance(conn ssh.Channel, term term.Term) Instance {
+	return Instance{
+		Term:        term,
 		Conn:        conn,
-		H:           25,
-		W:           80,
 		IsConnected: true,
 		Environment: make(map[string]string),
 	}

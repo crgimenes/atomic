@@ -24,15 +24,15 @@ type Term struct {
 	W              int
 	H              int
 	bufferPosition int
-	maxInputLength int
+	MaxInputLength int
 	C              io.Writer
 	captureInput   bool
 	echo           bool
 	replaceInput   bool
-	inputField     []rune
-	inputTrigger   chan struct{}
-	outputMode     OutputMode
-	outputDelay    time.Duration
+	InputField     []rune
+	InputTrigger   chan struct{}
+	OutputMode     OutputMode
+	OutputDelay    time.Duration
 }
 
 var (
@@ -97,37 +97,42 @@ func removeLastRune(s []rune) []rune {
 	return s[:n]
 }
 
-func (t *Term) Init() {
-	t.inputTrigger = make(chan struct{})
-	t.outputMode = UTF8
-	t.maxInputLength = 10
-	//t.outputSpeed = time.Microsecond * 300
-}
-
 func (t *Term) Clear() error {
 	_, err := io.WriteString(t.C, "\033[2J")
 	return err
 }
 
+func (t *Term) GetOutputDisplay() string {
+	switch t.OutputMode {
+	case CP437:
+		return "CP437"
+	case CP850:
+		return "CP850"
+	case UTF8:
+		return "UTF8"
+	}
+	return "Unknown"
+}
+
 func (t *Term) WriteString(s string) {
-	if t.outputMode == CP437 {
+	if t.OutputMode == CP437 {
 		for _, r := range s {
 			t.WriteByte(UTF8_TO_CP437[r])
 		}
 		return
 	}
 
-	if t.outputMode == CP850 {
+	if t.OutputMode == CP850 {
 		for _, r := range s {
 			t.WriteByte(UTF8_TO_CP850[r])
 		}
 		return
 	}
 
-	if t.outputDelay > 0 {
+	if t.OutputDelay > 0 {
 		for _, r := range s {
 			t.C.Write([]byte(string(r)))
-			time.Sleep(t.outputDelay)
+			time.Sleep(t.OutputDelay)
 		}
 		return
 	}
@@ -140,9 +145,9 @@ func (t *Term) WriteString(s string) {
 
 func (t *Term) WriteByte(b byte) {
 
-	if t.outputDelay > 0 {
+	if t.OutputDelay > 0 {
 		t.C.Write([]byte{b})
-		time.Sleep(t.outputDelay)
+		time.Sleep(t.OutputDelay)
 		return
 	}
 
@@ -153,19 +158,19 @@ func (t *Term) WriteByte(b byte) {
 }
 
 func (t *Term) WriteRune(r rune) {
-	if t.outputMode == CP437 {
+	if t.OutputMode == CP437 {
 		t.WriteByte(UTF8_TO_CP437[r])
 		return
 	}
 
-	if t.outputMode == CP850 {
+	if t.OutputMode == CP850 {
 		t.WriteByte(UTF8_TO_CP850[r])
 		return
 	}
 
-	if t.outputDelay > 0 {
+	if t.OutputDelay > 0 {
 		t.C.Write([]byte(string(r)))
-		time.Sleep(t.outputDelay)
+		time.Sleep(t.OutputDelay)
 		return
 	}
 
@@ -231,8 +236,8 @@ func (t *Term) Input(s string) {
 							return
 						case 'C': // right
 							t.bufferPosition++
-							if t.bufferPosition > len(t.inputField) {
-								t.bufferPosition = len(t.inputField)
+							if t.bufferPosition > len(t.InputField) {
+								t.bufferPosition = len(t.InputField)
 
 								return
 							}
@@ -259,37 +264,37 @@ func (t *Term) Input(s string) {
 							t.bufferPosition = 0
 							return
 						case 'F': // end
-							if t.bufferPosition == len(t.inputField) {
+							if t.bufferPosition == len(t.InputField) {
 								return
 							}
-							t.WriteString("\033[" + strconv.Itoa(len(t.inputField)-t.bufferPosition) + "C")
-							t.bufferPosition = len(t.inputField)
+							t.WriteString("\033[" + strconv.Itoa(len(t.InputField)-t.bufferPosition) + "C")
+							t.bufferPosition = len(t.InputField)
 							return
 
 						case '3': // delete
 							if s[3] == '~' {
-								if t.bufferPosition == len(t.inputField) {
+								if t.bufferPosition == len(t.InputField) {
 									return
 								}
-								if len(t.inputField) == 0 {
+								if len(t.InputField) == 0 {
 									return
 								}
-								if t.bufferPosition < len(t.inputField) {
+								if t.bufferPosition < len(t.InputField) {
 									if t.bufferPosition == 0 {
-										t.inputField = t.inputField[1:]
+										t.InputField = t.InputField[1:]
 									} else {
-										t.inputField = append(t.inputField[:t.bufferPosition], t.inputField[t.bufferPosition+1:]...)
+										t.InputField = append(t.InputField[:t.bufferPosition], t.InputField[t.bufferPosition+1:]...)
 									}
 									// save cursor position
 									t.WriteString("\033[s")
 									// print input field from bufferPosition
-									t.WriteString(string(t.inputField[t.bufferPosition:]))
+									t.WriteString(string(t.InputField[t.bufferPosition:]))
 									// print spaces to clear the rest of the line
 									t.WriteString(" ")
 									// restore cursor position
 									t.WriteString("\033[u")
 
-									if t.bufferPosition == len(t.inputField) {
+									if t.bufferPosition == len(t.InputField) {
 										t.bufferPosition--
 									}
 								}
@@ -303,7 +308,7 @@ func (t *Term) Input(s string) {
 				t.replaceInput = !t.replaceInput
 				return
 			case '\u007f', '\b': // backspace
-				if len(t.inputField) == 0 {
+				if len(t.InputField) == 0 {
 					return
 				}
 				if t.bufferPosition == 0 {
@@ -311,13 +316,13 @@ func (t *Term) Input(s string) {
 				}
 				t.WriteString("\b \b")
 				// remove rune at bufferPosition
-				if t.bufferPosition == len(t.inputField) {
-					t.inputField = removeLastRune(t.inputField)
+				if t.bufferPosition == len(t.InputField) {
+					t.InputField = removeLastRune(t.InputField)
 				} else {
 					if t.bufferPosition == 1 {
-						t.inputField = t.inputField[1:]
+						t.InputField = t.InputField[1:]
 					} else {
-						t.inputField = append(t.inputField[:t.bufferPosition-1], t.inputField[t.bufferPosition:]...)
+						t.InputField = append(t.InputField[:t.bufferPosition-1], t.InputField[t.bufferPosition:]...)
 					}
 				}
 				t.bufferPosition--
@@ -327,7 +332,7 @@ func (t *Term) Input(s string) {
 				// save cursor position
 				t.WriteString("\033[s")
 				// print input field from bufferPosition
-				t.WriteString(string(t.inputField[t.bufferPosition:]))
+				t.WriteString(string(t.InputField[t.bufferPosition:]))
 				// print spaces to clear the rest of the line
 				t.WriteString(" ")
 				// restore cursor position
@@ -336,7 +341,7 @@ func (t *Term) Input(s string) {
 				return
 			case '\r':
 				t.captureInput = false
-				t.inputTrigger <- struct{}{}
+				t.InputTrigger <- struct{}{}
 				t.bufferPosition = 0
 				return
 			case '\x01': // ctrl + a (home)
@@ -347,21 +352,21 @@ func (t *Term) Input(s string) {
 				t.bufferPosition = 0
 				return
 			case '\x05': // ctrl + e (end)
-				if t.bufferPosition == len(t.inputField) {
+				if t.bufferPosition == len(t.InputField) {
 					return
 				}
-				t.WriteString("\033[" + strconv.Itoa(len(t.inputField)-t.bufferPosition) + "C")
-				t.bufferPosition = len(t.inputField)
+				t.WriteString("\033[" + strconv.Itoa(len(t.InputField)-t.bufferPosition) + "C")
+				t.bufferPosition = len(t.InputField)
 				return
 
 			default:
-				if t.maxInputLength > 0 && len(t.inputField) >= t.maxInputLength {
+				if t.MaxInputLength > 0 && len(t.InputField) >= t.MaxInputLength {
 					return
 				}
 
 				if t.replaceInput {
-					if t.bufferPosition == len(t.inputField) {
-						t.inputField = append(t.inputField, c)
+					if t.bufferPosition == len(t.InputField) {
+						t.InputField = append(t.InputField, c)
 						t.bufferPosition++
 
 						if t.echo {
@@ -370,14 +375,14 @@ func (t *Term) Input(s string) {
 						continue
 					}
 
-					raux := t.inputField[t.bufferPosition+1:]
-					t.inputField = append(t.inputField[:t.bufferPosition], c)
-					t.inputField = append(t.inputField, raux...)
+					raux := t.InputField[t.bufferPosition+1:]
+					t.InputField = append(t.InputField[:t.bufferPosition], c)
+					t.InputField = append(t.InputField, raux...)
 					t.bufferPosition++
 				} else {
 
-					if t.bufferPosition == len(t.inputField) {
-						t.inputField = append(t.inputField, c)
+					if t.bufferPosition == len(t.InputField) {
+						t.InputField = append(t.InputField, c)
 						t.bufferPosition++
 
 						if t.echo {
@@ -387,14 +392,14 @@ func (t *Term) Input(s string) {
 					}
 
 					var (
-						final  = make([]rune, len(t.inputField[t.bufferPosition:]))
-						inicio = make([]rune, len(t.inputField[:t.bufferPosition]))
+						final  = make([]rune, len(t.InputField[t.bufferPosition:]))
+						inicio = make([]rune, len(t.InputField[:t.bufferPosition]))
 					)
-					copy(final, t.inputField[t.bufferPosition:])
-					copy(inicio, t.inputField)
+					copy(final, t.InputField[t.bufferPosition:])
+					copy(inicio, t.InputField)
 					inicio = append(inicio, c)
 					inicio = append(inicio, final...)
-					t.inputField = inicio
+					t.InputField = inicio
 
 					t.bufferPosition++
 
@@ -404,7 +409,7 @@ func (t *Term) Input(s string) {
 
 						// print input field from buffer position
 						t.WriteString(string(c))
-						t.WriteString(string(t.inputField[t.bufferPosition:]))
+						t.WriteString(string(t.InputField[t.bufferPosition:]))
 
 						// restore cursor position
 						t.WriteString("\033[u")
@@ -425,12 +430,12 @@ func (t *Term) GetField() string {
 
 	t.echo = true
 	t.captureInput = true
-	t.inputField = []rune{}
+	t.InputField = []rune{}
 
-	<-t.inputTrigger
+	<-t.InputTrigger
 
-	res := t.inputField
-	t.inputField = []rune{}
+	res := t.InputField
+	t.InputField = []rune{}
 	t.echo = false
 	return string(res)
 }
@@ -438,12 +443,12 @@ func (t *Term) GetField() string {
 func (t *Term) GetPassword() string {
 	t.echo = false
 	t.captureInput = true
-	t.inputField = []rune{}
+	t.InputField = []rune{}
 
-	<-t.inputTrigger
+	<-t.InputTrigger
 
-	res := t.inputField
-	t.inputField = []rune{}
+	res := t.InputField
+	t.InputField = []rune{}
 	return string(res)
 }
 
@@ -505,24 +510,25 @@ func (t *Term) Write(s string) int {
 }
 
 func (t *Term) SetOutputMode(mode string) {
+	log.Println("Setting output mode to: " + mode)
 	mode = strings.ToUpper(mode)
 	switch mode {
 	case "UTF8", "UTF-8":
-		t.outputMode = UTF8
+		t.OutputMode = UTF8
 	case "CP437":
-		t.outputMode = CP437
+		t.OutputMode = CP437
 	case "CP850":
-		t.outputMode = CP850
+		t.OutputMode = CP850
 	default:
-		t.outputMode = UTF8
+		t.OutputMode = UTF8
 		log.Printf("Invalid output mode: %s. Using UTF-8", mode)
 	}
 }
 
 func (t *Term) SetInputLimit(limit int) {
-	t.maxInputLength = limit
+	t.MaxInputLength = limit
 }
 
 func (t *Term) SetOutputDelay(delay int) {
-	t.outputDelay = time.Duration(delay) * time.Millisecond
+	t.OutputDelay = time.Duration(delay) * time.Millisecond
 }

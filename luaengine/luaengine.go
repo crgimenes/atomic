@@ -15,7 +15,6 @@ import (
 
 	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
-	"crg.eti.br/go/atomic/term"
 	"github.com/creack/pty"
 	lua "github.com/yuin/gopher-lua"
 	parse "github.com/yuin/gopher-lua/parse"
@@ -23,10 +22,9 @@ import (
 
 // LuaExtender holds an instance of the moon interpreter and the state variables of the extensions we made.
 type LuaExtender struct {
-	Term         term.Term
 	mutex        sync.RWMutex
 	luaState     *lua.LState
-	ci           *client.Instance
+	Ci           client.Instance
 	triggerList  map[string]*lua.LFunction
 	Proto        *lua.FunctionProto
 	ExternalExec bool
@@ -56,25 +54,32 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
 	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
 	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
+	le.luaState.SetGlobal("getOutputMode", le.luaState.NewFunction(le.getOutputMode))
 
 	return le
 }
 
 func (le *LuaExtender) setOutputDelay(l *lua.LState) int {
 	i := l.ToInt(1)
-	le.Term.SetOutputDelay(i)
+	le.Ci.Term.SetOutputDelay(i)
 	return 0
+}
+
+func (le *LuaExtender) getOutputMode(l *lua.LState) int {
+	res := lua.LString(le.Ci.Term.GetOutputDisplay())
+	l.Push(res)
+	return 1
 }
 
 func (le *LuaExtender) setOutputMode(l *lua.LState) int {
 	s := l.ToString(1)
-	le.Term.SetOutputMode(s)
+	le.Ci.Term.SetOutputMode(s)
 	return 0
 }
 
 func (le *LuaExtender) limitInputLength(l *lua.LState) int {
 	i := l.ToInt(1)
-	le.Term.SetInputLimit(i)
+	le.Ci.Term.SetInputLimit(i)
 	return 0
 }
 
@@ -83,7 +88,7 @@ func (le *LuaExtender) Close() error {
 }
 
 func (le *LuaExtender) Input(s string) {
-	le.Term.Input(s)
+	le.Ci.Term.Input(s)
 }
 
 // GetState returns the state of the moon interpreter.
@@ -92,7 +97,7 @@ func (le *LuaExtender) GetState() *lua.LState {
 }
 
 func (le *LuaExtender) cls(l *lua.LState) int {
-	err := le.Term.Clear()
+	err := le.Ci.Term.Clear()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -101,7 +106,7 @@ func (le *LuaExtender) cls(l *lua.LState) int {
 
 func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
 	s := l.ToString(1)
-	le.Term.WriteFromASCII(s)
+	le.Ci.Term.WriteFromASCII(s)
 
 	return 0
 }
@@ -121,16 +126,16 @@ func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
 
 	encoded := base64.StdEncoding.EncodeToString(content)
 
-	le.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
-	le.Term.WriteString(encoded)
-	le.Term.WriteString("\a")
+	le.Ci.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
+	le.Ci.Term.WriteString(encoded)
+	le.Ci.Term.WriteString("\a")
 
 	return 0
 }
 
 func (le *LuaExtender) write(l *lua.LState) int {
 	s := l.ToString(1)
-	le.Term.WriteString(s)
+	le.Ci.Term.WriteString(s)
 
 	return 0
 }
@@ -163,23 +168,18 @@ func (le *LuaExtender) DoCompiledFile(L *lua.LState, proto *lua.FunctionProto) e
 }
 
 // InitState starts the lua interpreter with a script.
-func (le *LuaExtender) InitState(ci *client.Instance) error {
-	le.ci = ci
-	le.Term = term.Term{
-		C: le.ci.Conn,
-	}
-	le.Term.Init()
+func (le *LuaExtender) InitState() error {
 	return le.DoCompiledFile(le.luaState, le.Proto)
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {
-	res := lua.LString(le.Term.GetField())
+	res := lua.LString(le.Ci.Term.GetField())
 	l.Push(res)
 	return 1
 }
 
 func (le *LuaExtender) getPassword(l *lua.LState) int {
-	res := lua.LString(le.Term.GetField())
+	res := lua.LString(le.Ci.Term.GetField())
 	l.Push(res)
 	return 1
 }
@@ -187,7 +187,7 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 // getEnv returns the value of the environment variable named by the key.
 func (le *LuaExtender) getEnv(l *lua.LState) int {
 	key := l.ToString(1)
-	value := le.ci.Environment[key]
+	value := le.Ci.Environment[key]
 	l.Push(lua.LString(value))
 	return 1
 }
@@ -211,7 +211,7 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 
 func (le *LuaExtender) setEcho(l *lua.LState) int {
 	b := l.ToBool(1)
-	le.Term.SetEcho(b)
+	le.Ci.Term.SetEcho(b)
 	return 0
 }
 
@@ -249,7 +249,7 @@ func (le *LuaExtender) timer(l *lua.LState) int {
 			le.mutex.Lock()
 			_, ok := le.triggerList[n]
 			le.mutex.Unlock()
-			if !le.ci.IsConnected || !ok {
+			if !le.Ci.IsConnected || !ok {
 				return
 			}
 			ok, err := le.RunTrigger(n)
@@ -280,8 +280,8 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 }
 
 func (le *LuaExtender) quit(l *lua.LState) int {
-	le.ci.Conn.Close()
-	le.ci.IsConnected = false
+	le.Ci.Conn.Close()
+	le.Ci.IsConnected = false
 	return 0
 }
 
@@ -317,7 +317,7 @@ func (le *LuaExtender) fileExists(l *lua.LState) int {
 func (le *LuaExtender) exec(l *lua.LState) int {
 	execFile := l.ToString(1)
 	le.ExternalExec = true
-	le.Term.Cls()
+	le.Ci.Term.Cls()
 	npty, ntty, err := pty.Open()
 	if err != nil {
 		log.Printf("Could not start pty (%s)", err)
@@ -351,7 +351,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 				log.Printf("1 -> n: %v (%v)", n, err)
 				return
 			}
-			_, err = le.ci.Conn.Write(b[:n])
+			_, err = le.Ci.Conn.Write(b[:n])
 			if err != nil {
 				log.Printf("1 <- n: %v (%v)", n, err)
 				return
@@ -368,7 +368,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			}
 		*/
 		for {
-			n, err := le.ci.Conn.Read(b)
+			n, err := le.Ci.Conn.Read(b)
 			if err != nil {
 				log.Printf("2 -> n: %v (%v)", n, err)
 				return
@@ -393,7 +393,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	}()
 
 	go func() {
-		var w, h uint32
+		var w, h int
 		var sizeAux string
 
 		for {
@@ -402,8 +402,8 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 				return
 			}
 			time.Sleep(100 * time.Millisecond)
-			w = le.ci.W
-			h = le.ci.H
+			w = le.Ci.Term.W
+			h = le.Ci.Term.H
 			if sizeAux == fmt.Sprintf("%d;%d", w, h) {
 				continue
 			}
@@ -427,7 +427,7 @@ type Winsize struct {
 	y      uint16 // unused
 }
 
-func SetWinsize(fd uintptr, w, h uint32) {
+func SetWinsize(fd uintptr, w, h int) {
 	ws := &Winsize{Width: uint16(w), Height: uint16(h)}
 	syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCSWINSZ), uintptr(unsafe.Pointer(ws)))
 }
