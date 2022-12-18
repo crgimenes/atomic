@@ -12,10 +12,10 @@ builds:
     goos:
       - linux
       - darwin
-  - id: ipclient
-    main: ./util/ipclient/main.go
+  - id: iptclient
+    main: ./util/iptclient/main.go
     ldflags: -s -w
-    binary: ipclient
+    binary: iptclient
     env:
       - CGO_ENABLED=0
     goos:
