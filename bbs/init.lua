@@ -1,13 +1,19 @@
+require "main_menu"
+
 if (getEnv("LANG") == "") then
     setOutputMode("CP850")
     -- setOutputMode("CP437")
     -- setOutputMode("UTF-8") -- default
 end
 
+cls()
+menu()
+
+
+
 -- setOutputDelay(1) -- 1ms delay between each character
 
-cls()
-write("\027[0;0H") -- move cursor to 0,0H
+write("\r\n")
 write("\r\nthis is a test write to client instance\r\n")
 write(" ██████╗██████╗  ██████╗    ███████╗████████╗██╗   ██████╗ ██████╗\r\n")
 write("██╔════╝██╔══██╗██╔════╝    ██╔════╝╚══██╔══╝██║   ██╔══██╗██╔══██╗\r\n")
@@ -19,8 +25,11 @@ write("crg@crg.eti.br @crgimenes\r\n")
 write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
 write("\r\n")
 
-writeFromASCII("nonfree/squiddy.ans")
-write("\r\n")
+
+if (fileExists("nonfree/squiddy.ans")) then
+    writeFromASCII("nonfree/squiddy.ans")
+    write("\r\n")
+end
 
 Str = ""
 
@@ -63,7 +72,7 @@ function Clock()
     write("\027[?25l") -- hide cursor
 
     write("\0277\27[0;0H") -- save cursor (DEC) and move cursor to 0,0
-    write(os.date('%Y-%m-%d %H:%M:%S UTC'))
+    write(os.date('%Y-%m-%d %H:%M:%S'))
     -- os.date("%Y-%m-%dT%H:%m:%S.000 %z"
     write("\0278") -- restore cursor (DEC)
     -- rmTrigger("clock")
@@ -99,7 +108,7 @@ function ShowSquiddy()
 end
 
 menu()
-timer("clock", 2100, Clock)
+timer("clock", 1100, Clock)
 
 trigger("1", ToggleEcho)
 trigger("2", TestPrint)

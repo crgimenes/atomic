@@ -15,6 +15,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// change to base bbs dir
+	err = os.Chdir(cfg.BaseBBSDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("base bbs dir: %s", cfg.BaseBBSDir)
+
 	go func() {
 		sc := make(chan os.Signal, 1)
 		signal.Notify(sc, os.Interrupt)

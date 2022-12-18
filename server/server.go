@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -242,8 +243,8 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	ci := client.NewInstance(conn, term)
 	le.Ci = ci
 	if s.proto == nil {
-		log.Printf("compiling init BBS file: %s\n", s.cfg.InitBBSFile)
-		s.proto, err = le.Compile(s.cfg.InitBBSFile)
+		log.Printf("compiling init BBS code\n")
+		s.proto, err = le.Compile("init.lua")
 		if err != nil {
 			log.Println(err.Error())
 			os.Exit(1)
@@ -268,7 +269,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 				err = le.InitState()
 				if err != nil {
-					log.Printf("can't open %v file, %v\n", s.cfg.InitBBSFile, err.Error())
+					log.Printf("can't open %v file, %v\n", filepath.Join(s.cfg.BaseBBSDir, "init.lua"), err.Error())
 					os.Exit(1)
 				}
 

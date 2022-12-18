@@ -1,8 +1,6 @@
 package database
 
 import (
-	"fmt"
-
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 
@@ -14,7 +12,7 @@ type Database struct {
 }
 
 func New(cfg config.Config) (*Database, error) {
-	connectionString := fmt.Sprintf(`file:%s?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`, cfg.DBFile)
+	connectionString := `file:atomic.db?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`
 	db, err := sqlx.Open("sqlite", connectionString)
 	if err != nil {
 		return nil, err
