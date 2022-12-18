@@ -55,6 +55,7 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
 	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
 	le.luaState.SetGlobal("getOutputMode", le.luaState.NewFunction(le.getOutputMode))
+	le.luaState.SetGlobal("setInputLimit", le.luaState.NewFunction(le.setInputLimit))
 
 	return le
 }
@@ -170,6 +171,12 @@ func (le *LuaExtender) DoCompiledFile(L *lua.LState, proto *lua.FunctionProto) e
 // InitState starts the lua interpreter with a script.
 func (le *LuaExtender) InitState() error {
 	return le.DoCompiledFile(le.luaState, le.Proto)
+}
+
+func (le *LuaExtender) setInputLimit(l *lua.LState) int {
+	i := l.ToInt(1)
+	le.Ci.Term.SetInputLimit(i)
+	return 0
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {

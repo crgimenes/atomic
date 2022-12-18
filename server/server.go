@@ -208,7 +208,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		C:              conn,
 		InputTrigger:   make(chan struct{}),
 		OutputMode:     term.UTF8,
-		MaxInputLength: 10,
+		MaxInputLength: 80,
 	}
 	le := luaengine.New(s.cfg)
 	ci := client.NewInstance(conn, term)
@@ -285,6 +285,30 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				environ[p.Key] = p.Value
 				ci.Environment = environ
 				req.Reply(true, nil)
+
+			case "subsystem":
+				fmt.Println("subsystem request")
+
+				var subsystem string
+				if len(req.Payload) > 4 {
+					subsystem = string(req.Payload[4:])
+				}
+
+				switch subsystem {
+				case "sftp":
+					fmt.Println("sftp request unimplemented")
+					req.Reply(false, nil)
+					return
+				default:
+					log.Printf("unknown subsystem request: %q", subsystem)
+					req.Reply(false, nil)
+				}
+
+				err := req.Reply(true, nil)
+				if err != nil {
+					log.Println(err.Error())
+					return
+				}
 
 			default:
 				fmt.Println("default request")
