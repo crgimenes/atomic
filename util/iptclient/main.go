@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -69,7 +70,7 @@ func main() {
 				nterm := term.NewTerminal(os.Stdin, ":")
 				line, err := nterm.ReadLine()
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 					os.Exit(1)
 				}
 				b = []byte(line)

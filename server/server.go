@@ -256,7 +256,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		for req := range requests {
 			switch req.Type {
 			case "shell":
-				fmt.Println("shell request")
+				log.Println("shell request")
 				// We only accept the default shell
 				// (i.e. no command in the Payload)
 				if len(req.Payload) == 0 {
@@ -274,7 +274,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				}
 
 			case "pty-req":
-				fmt.Println("pty-req request")
+				log.Println("pty-req request")
 				termLen := req.Payload[3]
 				s.mux.Lock()
 				ci.Term.W, ci.Term.H = parseDims(req.Payload[termLen+4:])
@@ -285,12 +285,12 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					return
 				}
 			case "window-change":
-				fmt.Println("window-change request")
+				log.Println("window-change request")
 				s.mux.Lock()
 				ci.Term.W, ci.Term.H = parseDims(req.Payload)
 				s.mux.Unlock()
 			case "env":
-				fmt.Println("env request")
+				log.Println("env request")
 				err := req.Reply(true, nil)
 				if err != nil {
 					req.Reply(false, nil)
@@ -312,7 +312,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				req.Reply(true, nil)
 
 			case "subsystem":
-				fmt.Println("subsystem request")
+				log.Println("subsystem request")
 
 				var subsystem string
 				if len(req.Payload) > 4 {
@@ -321,7 +321,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 				switch subsystem {
 				case "sftp":
-					fmt.Println("sftp request unimplemented")
+					log.Println("sftp request unimplemented")
 					req.Reply(false, nil)
 					return
 				default:
@@ -330,7 +330,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					return
 				}
 			default:
-				fmt.Println("default request")
+				log.Println("default request")
 				log.Printf("unknown request: %s, %q, %v\n", req.Type, req.Payload, req.WantReply)
 				err := req.Reply(false, nil)
 				if err != nil {

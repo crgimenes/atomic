@@ -100,7 +100,7 @@ func (le *LuaExtender) GetState() *lua.LState {
 func (le *LuaExtender) cls(l *lua.LState) int {
 	err := le.Ci.Term.Clear()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return 0
 }
@@ -117,12 +117,12 @@ func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
 
 	f, err := os.Open(s)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	reader := bufio.NewReader(f)
 	content, err := ioutil.ReadAll(reader)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	encoded := base64.StdEncoding.EncodeToString(content)
@@ -295,7 +295,7 @@ func (le *LuaExtender) quit(l *lua.LState) int {
 func pwd() string {
 	d, err := os.Getwd()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return d
 }
