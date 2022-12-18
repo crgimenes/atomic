@@ -33,13 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	/*
-		err = db.Ping()
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
+	defer db.Close()
 
 	// get SQLite version
 	var version string

@@ -121,7 +121,7 @@ write("\r\n")
 
 while true do
     write("\nenter a string:")
-    Str = getField()
+    local Str = getField()
     write("\r\n")
     write("[")
     write(Str)

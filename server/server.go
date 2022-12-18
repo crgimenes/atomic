@@ -13,6 +13,7 @@ import (
 
 	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
+	"crg.eti.br/go/atomic/database"
 	"crg.eti.br/go/atomic/luaengine"
 	"crg.eti.br/go/atomic/term"
 	lua "github.com/yuin/gopher-lua"
@@ -33,6 +34,7 @@ func New(cfg config.Config) *SSHServer {
 
 func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 
+	//TODO: authorized_keys file only to sysop user
 	authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
 	if err != nil {
 		log.Fatalf("Failed to load authorized_keys, err: %v", err)
@@ -80,15 +82,41 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 				key.Type(),
 				ssh.FingerprintSHA256(key))
 
-			if authorizedKeysMap[string(key.Marshal())] {
-				return &ssh.Permissions{
-					// Record the public key used for authentication.
-					Extensions: map[string]string{
-						"pubkey-fp": ssh.FingerprintSHA256(key),
-					},
-				}, nil
+			//////////////////////////////////////////////
+
+			db, err := database.New(s.cfg)
+			if err != nil {
+				return nil, err
 			}
-			return nil, fmt.Errorf("unknown public key for %q", c.User())
+			defer db.Close()
+
+			user, err := db.GetUserByName(c.User())
+			if err != nil {
+				return nil, err
+			}
+
+			fmt.Printf("user %q, %q\n", user.Nickname, user.Email)
+
+			if user.SSHPublicKey == "" {
+				return nil, fmt.Errorf("user %q has no public key", c.User())
+			}
+
+			// TODO: support to multiple keys
+			pubKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(user.SSHPublicKey))
+			if err != nil {
+				return nil, err
+			}
+
+			if string(pubKey.Marshal()) != string(key.Marshal()) {
+				return nil, fmt.Errorf("error validating public key for %q", c.User())
+			}
+
+			return &ssh.Permissions{
+				// Record the public key used for authentication.
+				Extensions: map[string]string{
+					"pubkey-fp": ssh.FingerprintSHA256(key),
+				},
+			}, nil
 		},
 	}
 	scfg.AddHostKey(pk)
@@ -213,22 +241,18 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	le := luaengine.New(s.cfg)
 	ci := client.NewInstance(conn, term)
 	le.Ci = ci
-	le.Proto = s.proto
 	if s.proto == nil {
-		//TODO: move to main
-		proto, err := le.Compile(s.cfg.InitBBSFile)
+		log.Printf("compiling init BBS file: %s\n", s.cfg.InitBBSFile)
+		s.proto, err = le.Compile(s.cfg.InitBBSFile)
 		if err != nil {
 			log.Println(err.Error())
 			os.Exit(1)
 		}
-		le.Proto = proto
-		s.proto = proto
 	}
+	le.Proto = s.proto
 
-	// Sessions have out-of-band requests such as "shell", "pty-req" and "env"
 	go func() {
 		for req := range requests {
-			// log.Printf("%q %q", req.Type, req.Payload)
 			switch req.Type {
 			case "shell":
 				fmt.Println("shell request")
@@ -302,14 +326,8 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				default:
 					log.Printf("unknown subsystem request: %q", subsystem)
 					req.Reply(false, nil)
-				}
-
-				err := req.Reply(true, nil)
-				if err != nil {
-					log.Println(err.Error())
 					return
 				}
-
 			default:
 				fmt.Println("default request")
 				log.Printf("unknown request: %s, %q, %v\n", req.Type, req.Payload, req.WantReply)
@@ -348,25 +366,6 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		}
 		ci.IsConnected = false
 	}()
-
-	/*
-		if l.Proto == nil {
-			proto, err := l.Compile(s.cfg.InitBBSFile)
-			if err != nil {
-				log.Println(err.Error())
-				os.Exit(1)
-			}
-			l.Proto = proto
-		}
-	*/
-
-	/*
-		err = le.InitState()
-		if err != nil {
-			log.Printf("can't open %v file, %v\n", s.cfg.InitBBSFile, err.Error())
-			os.Exit(1)
-		}
-	*/
 }
 
 // parseDims extracts terminal dimensions (width x height) from the provided buffer.
