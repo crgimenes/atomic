@@ -3,6 +3,33 @@ before:
     - go mod tidy
     - go generate ./...
 builds:
+  - id: ipterm
+    main: ./util/ipterm/main.go
+    ldflags: -s -w
+    binary: ipterm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+  - id: ipclient
+    main: ./util/ipclient/main.go
+    ldflags: -s -w
+    binary: ipclient
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+  - id: atomicdb
+    main: ./util/atomicdb/main.go
+    ldflags: -s -w
+    binary: atomicdb
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
   - id: atomic
     main: ./main.go
     ldflags: -s -w
