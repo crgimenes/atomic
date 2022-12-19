@@ -85,7 +85,7 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 
 			//////////////////////////////////////////////
 
-			db, err := database.New(s.cfg)
+			db, err := database.New()
 			if err != nil {
 				return nil, err
 			}
