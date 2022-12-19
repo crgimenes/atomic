@@ -76,7 +76,6 @@ builds:
       - darwin
       - linux
       - freebsd
-      - netbsd
       - openbsd
     goarch:
       - amd64
