@@ -96,6 +96,7 @@ func (d *Database) RunMigration() error {
 					email TEXT NOT NULL,
 					password TEXT NOT NULL,
 					ssh_public_key TEXT NOT NULL,
+					groups TEXT NOT NULL DEFAULT 'user', -- user,sysop
 					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 				)`)
