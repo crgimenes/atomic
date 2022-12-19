@@ -84,6 +84,23 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 				ssh.FingerprintSHA256(key))
 
 			//////////////////////////////////////////////
+			// sysop user
+			//////////////////////////////////////////////
+
+			if c.User() == "sysop" {
+				if !authorizedKeysMap[string(key.Marshal())] {
+					return nil, fmt.Errorf("error validating public key for sysop")
+				}
+				return &ssh.Permissions{
+					Extensions: map[string]string{
+						"pubkey-fp": ssh.FingerprintSHA256(key),
+					},
+				}, nil
+			}
+
+			//////////////////////////////////////////////
+			// normal user
+			//////////////////////////////////////////////
 
 			db, err := database.New()
 			if err != nil {
