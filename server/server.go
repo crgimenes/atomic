@@ -35,25 +35,6 @@ func New(cfg config.Config) *SSHServer {
 
 func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 
-	//TODO: authorized_keys file only to sysop user
-	authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
-	if err != nil {
-		log.Fatalf("Failed to load authorized_keys, err: %v", err)
-	}
-
-	authorizedKeysMap := map[string]bool{}
-	for len(authorizedKeysBytes) > 0 {
-		pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		authorizedKeysMap[string(pubKey.Marshal())] = true
-		authorizedKeysBytes = rest
-
-		log.Printf("authorized key fingerprint: %s, %s", pubKey.Type(), ssh.FingerprintSHA256(pubKey))
-	}
-
 	b, err := os.ReadFile(s.cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load private key, %v", err.Error())
@@ -88,6 +69,28 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 			//////////////////////////////////////////////
 
 			if c.User() == "sysop" {
+				// TODO: criar um sistema de grupos de usuários
+				// TODO: verificar se o sysop existe no banco de dados
+				// se existir carregar os dados do banco de dados.
+
+				authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
+				if err != nil {
+					log.Fatalf("Failed to load authorized_keys, err: %v", err)
+				}
+
+				authorizedKeysMap := map[string]bool{}
+				for len(authorizedKeysBytes) > 0 {
+					pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					authorizedKeysMap[string(pubKey.Marshal())] = true
+					authorizedKeysBytes = rest
+
+					log.Printf("authorized key fingerprint: %s, %s", pubKey.Type(), ssh.FingerprintSHA256(pubKey))
+				}
+
 				if !authorizedKeysMap[string(key.Marshal())] {
 					return nil, fmt.Errorf("error validating public key for sysop")
 				}
