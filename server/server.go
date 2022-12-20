@@ -69,10 +69,6 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 			//////////////////////////////////////////////
 
 			if c.User() == "sysop" {
-				// TODO: criar um sistema de grupos de usuários
-				// TODO: verificar se o sysop existe no banco de dados
-				// se existir carregar os dados do banco de dados.
-
 				authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
 				if err != nil {
 					log.Fatalf("Failed to load authorized_keys, err: %v", err)
@@ -94,11 +90,17 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 				if !authorizedKeysMap[string(key.Marshal())] {
 					return nil, fmt.Errorf("error validating public key for sysop")
 				}
+
+				// TODO: verificar se o sysop existe no banco de dados
+				// se existir carregar os dados do banco de dados.
+				// se não existir, criar o sysop no banco de dados.
+
 				return &ssh.Permissions{
 					Extensions: map[string]string{
 						"pubkey-fp": ssh.FingerprintSHA256(key),
 					},
 				}, nil
+
 			}
 
 			//////////////////////////////////////////////
@@ -111,7 +113,7 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 			}
 			defer db.Close()
 
-			user, err := db.GetUserByName(c.User())
+			user, err := db.GetUserByNickname(c.User())
 			if err != nil {
 				return nil, err
 			}

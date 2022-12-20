@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
 
@@ -15,8 +16,14 @@ const (
 )
 
 var (
-	ErrDatabaseAhead       = errors.New("database is ahead of current migration, please update the application")
-	ErrDatabaseNotUpToDate = errors.New("database is not up to date, please run migrations")
+	ErrDatabaseAhead            = errors.New("database is ahead of current migration, please update the application")
+	ErrDatabaseNotUpToDate      = errors.New("database is not up to date, please run migrations")
+	ErrNicknameEmpty            = errors.New("nickname is required")
+	ErrEmailEmpty               = errors.New("email is required")
+	ErrPasswordOrSSHKeyRequired = errors.New("password or ssh public key is required")
+	ErrPasswordTooShort         = errors.New("password must be at least 8 characters")
+
+	connectionString = `file:atomic.db?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`
 )
 
 type Database struct {
@@ -24,7 +31,6 @@ type Database struct {
 }
 
 func New() (*Database, error) {
-	connectionString := `file:atomic.db?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`
 	db, err := sqlx.Open("sqlite", connectionString)
 	if err != nil {
 		return nil, err
@@ -53,26 +59,13 @@ type User struct {
 	Email        string `db:"email"`
 	Password     string `db:"password"`
 	SSHPublicKey string `db:"ssh_public_key"`
+	Groups       string `db:"groups"`
 	CreatedAt    string `db:"created_at"`
 	UpdatedAt    string `db:"updated_at"`
 }
 
-func (d *Database) GetUserByName(name string) (User, error) {
-	var user User
-	err := d.db.QueryRowx(`SELECT * FROM users WHERE nickname = ?`, name).StructScan(&user)
-	if err != nil {
-		return User{}, err
-	}
-
-	return user, nil
-}
-
 func (d *Database) RunMigration() error {
-	// migration table
-	_, err := d.db.Exec(`CREATE TABLE IF NOT EXISTS migrations (
-				id INTEGER PRIMARY KEY,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-				)`)
+	err := d.createMigrationTable()
 	if err != nil {
 		return err
 	}
@@ -92,11 +85,11 @@ func (d *Database) RunMigration() error {
 		log.Println("running migration 1")
 		_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS users (
 					id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-					nickname TEXT NOT NULL,
-					email TEXT NOT NULL,
-					password TEXT NOT NULL,
-					ssh_public_key TEXT NOT NULL,
-					groups TEXT NOT NULL DEFAULT 'user', -- user,sysop
+					nickname TEXT NOT NULL UNIQUE,
+					email TEXT NOT NULL UNIQUE,
+					password TEXT, -- can be empty if using ssh key
+					ssh_public_key TEXT, -- can be empty if using password
+					groups TEXT NOT NULL DEFAULT 'users', -- users,sysop
 					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 				)`)
@@ -131,10 +124,19 @@ func (d *Database) RunMigration() error {
 	return tx.Commit()
 }
 
+func (d *Database) createMigrationTable() error {
+	_, err := d.db.Exec(`CREATE TABLE IF NOT EXISTS migrations (
+				id INTEGER PRIMARY KEY,
+				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+				)`)
+	return err
+}
+
 func (d *Database) VerifyMigration() (int, error) {
-	var lastMigration = 0
-	// count migrations
-	var count int
+	var (
+		lastMigration int
+		count         int
+	)
 	err := d.db.Get(&count, `SELECT COUNT(*) FROM migrations`)
 	if err != nil {
 		return 0, err
@@ -165,4 +167,73 @@ func (d *Database) ChkMigration() error {
 	}
 
 	return nil
+}
+
+func (d *Database) CreateUser(nickname, email, password, sshPublicKey, groups string) (User, error) {
+
+	if nickname == "" {
+		return User{}, ErrNicknameEmpty
+	}
+	if email == "" {
+		return User{}, ErrEmailEmpty
+	}
+	if password == "" && sshPublicKey == "" {
+		return User{}, ErrPasswordOrSSHKeyRequired
+	}
+	if password != "" {
+		if len(password) < 8 {
+			return User{}, ErrPasswordTooShort
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return User{}, err
+		}
+		password = string(hashedPassword)
+	}
+	if groups == "" {
+		groups = "users"
+	}
+
+	sql := `INSERT INTO users (
+		nickname,
+		email,
+		password,
+		ssh_public_key, 
+		groups) 
+		VALUES ($1, $2, $3, $4, $5) RETURNING *`
+	var user User
+	err := d.db.QueryRowx(sql, nickname, email, password, sshPublicKey, groups).StructScan(&user)
+
+	return user, err
+}
+
+func (d *Database) GetUserByID(id int) (User, error) {
+	var user User
+	err := d.db.QueryRowx(`SELECT * FROM users WHERE id = $1`, id).StructScan(&user)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (d *Database) GetUserByEmail(email string) (User, error) {
+	var user User
+	err := d.db.QueryRowx(`SELECT * FROM users WHERE email = $1`, email).StructScan(&user)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (d *Database) GetUserByNickname(nickname string) (User, error) {
+	var user User
+	err := d.db.QueryRowx(`SELECT * FROM users WHERE nickname = $1`, nickname).StructScan(&user)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
 }
