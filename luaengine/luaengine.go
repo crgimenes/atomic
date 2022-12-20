@@ -15,6 +15,7 @@ import (
 
 	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
+	"crg.eti.br/go/atomic/database"
 	"github.com/creack/pty"
 	lua "github.com/yuin/gopher-lua"
 	parse "github.com/yuin/gopher-lua/parse"
@@ -28,6 +29,7 @@ type LuaExtender struct {
 	triggerList  map[string]*lua.LFunction
 	Proto        *lua.FunctionProto
 	ExternalExec bool
+	Users        *map[string]database.User
 }
 
 // New creates a new instance of LuaExtender.
@@ -289,6 +291,7 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 func (le *LuaExtender) quit(l *lua.LState) int {
 	le.Ci.Conn.Close()
 	le.Ci.IsConnected = false
+	delete(*le.Users, le.Ci.User.Nickname)
 	return 0
 }
 

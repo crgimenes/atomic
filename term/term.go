@@ -139,7 +139,7 @@ func (t *Term) WriteString(s string) {
 
 	_, err := io.WriteString(t.C, s)
 	if err != nil {
-		log.Println("term error writing string:", err)
+		log.Println("term error writing string:", err) // TODO: add return error
 	}
 }
 

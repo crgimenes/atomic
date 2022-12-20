@@ -25,11 +25,13 @@ type SSHServer struct {
 	mux   sync.Mutex
 	proto *lua.FunctionProto
 	cfg   config.Config
+	Users map[string]database.User
 }
 
 func New(cfg config.Config) *SSHServer {
 	return &SSHServer{
-		cfg: cfg,
+		cfg:   cfg,
+		Users: make(map[string]database.User),
 	}
 }
 
@@ -53,6 +55,11 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 			log.Println("password callback")
 			if c.User() == "foo" && string(pass) == "bar" {
 				log.Printf("user %v authenticated with password", c.User())
+
+				s.Users[c.User()] = database.User{ // TODO: get user from database
+					Nickname: c.User(),
+				}
+
 				return nil, nil
 			}
 			return nil, fmt.Errorf("password rejected for %q", c.User())
@@ -95,6 +102,10 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 				// se existir carregar os dados do banco de dados.
 				// se não existir, criar o sysop no banco de dados.
 
+				s.Users[c.User()] = database.User{ // TODO: get user from database
+					Nickname: c.User(),
+				}
+
 				return &ssh.Permissions{
 					Extensions: map[string]string{
 						"pubkey-fp": ssh.FingerprintSHA256(key),
@@ -133,6 +144,8 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 			if string(pubKey.Marshal()) != string(key.Marshal()) {
 				return nil, fmt.Errorf("error validating public key for %q", c.User())
 			}
+
+			s.Users[c.User()] = user // TODO: add last login date time
 
 			return &ssh.Permissions{
 				// Record the public key used for authentication.
@@ -262,8 +275,10 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		MaxInputLength: 80,
 	}
 	le := luaengine.New(s.cfg)
+	le.Users = &s.Users
 	ci := client.NewInstance(conn, term)
 	le.Ci = ci
+	ci.User = s.Users[serverConn.User()]
 	if s.proto == nil {
 		log.Printf("compiling init BBS code\n")
 		s.proto, err = le.Compile("init.lua")
@@ -388,6 +403,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			}
 		}
 		ci.IsConnected = false
+		delete(s.Users, serverConn.User())
 	}()
 }
 
