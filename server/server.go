@@ -51,6 +51,15 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 
 	scfg := &ssh.ServerConfig{
 		NoClientAuth: false,
+
+		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
+			if err != nil {
+				log.Printf("Failed authentication for %q from %v, method %v, error: %v", conn.User(), conn.RemoteAddr(), method, err)
+			} else {
+				log.Printf("Successful authentication for %q from %v, method %v", conn.User(), conn.RemoteAddr(), method)
+			}
+		},
+
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 			log.Println("password callback")
 			if c.User() == "foo" && string(pass) == "bar" {
@@ -304,11 +313,31 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					}
 				}
 
+				//////////////////////////////
+				_, ok := s.Users[serverConn.User()]
+				if !ok {
+					log.Printf("user %v not found\n", serverConn.User())
+					// add user
+					s.Users[serverConn.User()] = database.User{
+						Nickname: serverConn.User(),
+					}
+				}
+
+				// list users
+				log.Println("users:")
+				for _, u := range s.Users {
+					log.Printf("  %v\n", u.Nickname)
+				}
+
+				//////////////////////////////
+
 				err = le.InitState()
 				if err != nil {
 					log.Printf("can't open %v file, %v\n", filepath.Join(s.cfg.BaseBBSDir, "init.lua"), err.Error())
 					os.Exit(1)
 				}
+
+				return
 
 			case "pty-req":
 				log.Println("pty-req request")
