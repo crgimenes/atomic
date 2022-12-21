@@ -35,8 +35,147 @@ func New(cfg config.Config) *SSHServer {
 	}
 }
 
-func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
+func (s *SSHServer) authLogCallback(c ssh.ConnMetadata, method string, err error) {
+	if err != nil {
+		log.Printf("Failed authentication for %q from %v, method %v, error: %v", c.User(), c.RemoteAddr(), method, err)
+		return
+	}
+	log.Printf("Successful authentication for %q from %v, method %v", c.User(), c.RemoteAddr(), method)
+}
 
+func (s *SSHServer) passwordCallback(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+	log.Println("password callback")
+	if c.User() == "foo" && string(pass) == "bar" {
+		log.Printf("user %v authenticated with password", c.User())
+
+		s.Users[c.User()] = database.User{ // TODO: get user from database
+			Nickname: c.User(),
+		}
+
+		return nil, nil
+	}
+	return nil, fmt.Errorf("password rejected for %q", c.User())
+}
+
+func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+	log.Printf("Public key for %q, %q, %q, %s",
+		c.User(),
+		c.RemoteAddr(),
+		key.Type(),
+		ssh.FingerprintSHA256(key))
+
+	//////////////////////////////////////////////
+	// sysop user
+	//////////////////////////////////////////////
+
+	if c.User() == "sysop" {
+		authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
+		if err != nil {
+			log.Fatalf("Failed to load authorized_keys, err: %v", err)
+		}
+
+		authorizedKeysMap := map[string]bool{}
+		for len(authorizedKeysBytes) > 0 {
+			pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			authorizedKeysMap[string(pubKey.Marshal())] = true
+			authorizedKeysBytes = rest
+
+			log.Printf("authorized key fingerprint: %s, %s", pubKey.Type(), ssh.FingerprintSHA256(pubKey))
+		}
+
+		if !authorizedKeysMap[string(key.Marshal())] {
+			return nil, fmt.Errorf("error validating public key for sysop")
+		}
+
+		// TODO: verificar se o sysop existe no banco de dados
+		// se existir carregar os dados do banco de dados.
+		// se não existir, criar o sysop no banco de dados.
+
+		s.Users[c.User()] = database.User{ // TODO: get user from database
+			Nickname: c.User(),
+		}
+
+		return &ssh.Permissions{
+			Extensions: map[string]string{
+				"pubkey-fp": ssh.FingerprintSHA256(key),
+			},
+		}, nil
+
+	}
+
+	//////////////////////////////////////////////
+	// normal user
+	//////////////////////////////////////////////
+
+	db, err := database.New()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	user, err := db.GetUserByNickname(c.User())
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("user %q, %q\n", user.Nickname, user.Email)
+
+	if user.SSHPublicKey == "" {
+		return nil, fmt.Errorf("user %q has no public key", c.User())
+	}
+
+	// TODO: support to multiple keys
+	pubKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(user.SSHPublicKey))
+	if err != nil {
+		return nil, err
+	}
+
+	if string(pubKey.Marshal()) != string(key.Marshal()) {
+		return nil, fmt.Errorf("error validating public key for %q", c.User())
+	}
+
+	s.Users[c.User()] = user // TODO: add last login date time
+
+	return &ssh.Permissions{
+		// Record the public key used for authentication.
+		Extensions: map[string]string{
+			"pubkey-fp": ssh.FingerprintSHA256(key),
+		},
+	}, nil
+}
+
+func (s *SSHServer) keyboardInteractiveCallback(conn ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
+	log.Println("keyboard interactive callback")
+	if conn.User() == "foo" {
+		// We don't care about the provided instructions or echos.
+		// We only accept one answer, and it must be "bar".
+		answers, err := client("", "", []string{"Password:"}, []bool{true})
+		if err != nil {
+			return nil, err
+		}
+		if len(answers) != 1 || answers[0] != "bar" {
+			return nil, fmt.Errorf("keyboard-interactive challenge failed")
+		}
+		return nil, nil
+	}
+	return nil, fmt.Errorf("keyboard-interactive challenge failed")
+}
+
+func (s *SSHServer) bannerCallback(conn ssh.ConnMetadata) string {
+	return "Welcome to Atomic\n"
+	// ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no localhost -p 2200
+
+	// supported key types
+	// ssh-keygen -t ecdsa -b 521
+	// ssh-keygen -t ed25519
+
+}
+
+func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 	b, err := os.ReadFile(s.cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load private key, %v", err.Error())
@@ -50,160 +189,17 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 	log.Printf("private key fingerprint: %s", ssh.FingerprintSHA256(pk.PublicKey()))
 
 	scfg := &ssh.ServerConfig{
-		NoClientAuth: false,
-
-		AuthLogCallback: func(conn ssh.ConnMetadata, method string, err error) {
-			if err != nil {
-				log.Printf("Failed authentication for %q from %v, method %v, error: %v", conn.User(), conn.RemoteAddr(), method, err)
-			} else {
-				log.Printf("Successful authentication for %q from %v, method %v", conn.User(), conn.RemoteAddr(), method)
-			}
-		},
-
-		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-			log.Println("password callback")
-			if c.User() == "foo" && string(pass) == "bar" {
-				log.Printf("user %v authenticated with password", c.User())
-
-				s.Users[c.User()] = database.User{ // TODO: get user from database
-					Nickname: c.User(),
-				}
-
-				return nil, nil
-			}
-			return nil, fmt.Errorf("password rejected for %q", c.User())
-		},
-		PublicKeyCallback: func(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-			log.Printf("Public key for %q, %q, %q, %s",
-				c.User(),
-				c.RemoteAddr(),
-				key.Type(),
-				ssh.FingerprintSHA256(key))
-
-			//////////////////////////////////////////////
-			// sysop user
-			//////////////////////////////////////////////
-
-			if c.User() == "sysop" {
-				authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
-				if err != nil {
-					log.Fatalf("Failed to load authorized_keys, err: %v", err)
-				}
-
-				authorizedKeysMap := map[string]bool{}
-				for len(authorizedKeysBytes) > 0 {
-					pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					authorizedKeysMap[string(pubKey.Marshal())] = true
-					authorizedKeysBytes = rest
-
-					log.Printf("authorized key fingerprint: %s, %s", pubKey.Type(), ssh.FingerprintSHA256(pubKey))
-				}
-
-				if !authorizedKeysMap[string(key.Marshal())] {
-					return nil, fmt.Errorf("error validating public key for sysop")
-				}
-
-				// TODO: verificar se o sysop existe no banco de dados
-				// se existir carregar os dados do banco de dados.
-				// se não existir, criar o sysop no banco de dados.
-
-				s.Users[c.User()] = database.User{ // TODO: get user from database
-					Nickname: c.User(),
-				}
-
-				return &ssh.Permissions{
-					Extensions: map[string]string{
-						"pubkey-fp": ssh.FingerprintSHA256(key),
-					},
-				}, nil
-
-			}
-
-			//////////////////////////////////////////////
-			// normal user
-			//////////////////////////////////////////////
-
-			db, err := database.New()
-			if err != nil {
-				return nil, err
-			}
-			defer db.Close()
-
-			user, err := db.GetUserByNickname(c.User())
-			if err != nil {
-				return nil, err
-			}
-
-			fmt.Printf("user %q, %q\n", user.Nickname, user.Email)
-
-			if user.SSHPublicKey == "" {
-				return nil, fmt.Errorf("user %q has no public key", c.User())
-			}
-
-			// TODO: support to multiple keys
-			pubKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(user.SSHPublicKey))
-			if err != nil {
-				return nil, err
-			}
-
-			if string(pubKey.Marshal()) != string(key.Marshal()) {
-				return nil, fmt.Errorf("error validating public key for %q", c.User())
-			}
-
-			s.Users[c.User()] = user // TODO: add last login date time
-
-			return &ssh.Permissions{
-				// Record the public key used for authentication.
-				Extensions: map[string]string{
-					"pubkey-fp": ssh.FingerprintSHA256(key),
-				},
-			}, nil
-		},
+		NoClientAuth:                false,
+		AuthLogCallback:             s.authLogCallback,
+		PasswordCallback:            s.passwordCallback,
+		PublicKeyCallback:           s.publicKeyCallback,
+		KeyboardInteractiveCallback: s.keyboardInteractiveCallback,
+		BannerCallback:              s.bannerCallback,
+		ServerVersion:               "SSH-2.0-ATOMIC",
+		MaxAuthTries:                3,
 	}
 	scfg.AddHostKey(pk)
-	// set ssh authentication method
-	scfg.AuthLogCallback = func(conn ssh.ConnMetadata, method string, err error) {
-		if err != nil {
-			log.Printf("Failed authentication for %q from %v, error: %v", conn.User(), conn.RemoteAddr(), err)
-			return
-		}
-		log.Printf("Successful authentication for %q from %v using %v", conn.User(), conn.RemoteAddr(), method)
 
-	}
-	scfg.KeyboardInteractiveCallback = func(conn ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
-		log.Println("keyboard interactive callback")
-		if conn.User() == "foo" {
-			// We don't care about the provided instructions or echos.
-			// We only accept one answer, and it must be "bar".
-			answers, err := client("", "", []string{"Password:"}, []bool{true})
-			if err != nil {
-				return nil, err
-			}
-			if len(answers) != 1 || answers[0] != "bar" {
-				return nil, fmt.Errorf("keyboard-interactive challenge failed")
-			}
-			return nil, nil
-		}
-		return nil, fmt.Errorf("keyboard-interactive challenge failed")
-	}
-
-	// SSH-2.0-Go
-	scfg.ServerVersion = "SSH-2.0-ATOMIC"
-	scfg.BannerCallback = func(conn ssh.ConnMetadata) string {
-		return "Welcome to Atomic\n"
-		// ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no localhost -p 2200
-
-		// supported key types
-		// ssh-keygen -t ecdsa -b 521
-		// ssh-keygen -t ed25519
-
-	}
-
-	scfg.MaxAuthTries = 3
 	return scfg, nil
 }
 
@@ -255,25 +251,9 @@ func (s *SSHServer) handleChannels(serverConn *ssh.ServerConn, chans <-chan ssh.
 }
 
 func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.NewChannel) {
-	// Since we're handling a shell, we expect a
-	// channel type of "session". The also describes
-	// "x11", "direct-tcpip" and "forwarded-tcpip"
-	// channel types.
-	t := newChannel.ChannelType()
-	if t != "session" {
-		err := newChannel.Reject(ssh.UnknownChannelType,
-			fmt.Sprintf("unknown channel type: %s", t))
-		if err != nil {
-			log.Printf("error unknow channel type (%s)", err)
-		}
-		return
-	}
-
-	// At this point, we have the opportunity to reject the client's
-	// request for another logical conn
 	conn, requests, err := newChannel.Accept()
 	if err != nil {
-		log.Printf("Could not accept channel (%s)", err)
+		log.Printf("could not accept channel, %v", err.Error())
 		return
 	}
 
@@ -372,9 +352,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				var p client.KeyValue
 				ssh.Unmarshal(req.Payload, &p)
 				log.Printf("env: %s = %s", p.Key, p.Value)
-				environ := ci.Environment
-				environ[p.Key] = p.Value
-				ci.Environment = environ
+				ci.Environment[p.Key] = p.Value
 				req.Reply(true, nil)
 
 			case "subsystem":
@@ -407,7 +385,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}()
 
 	go func() {
-		b := make([]byte, 8)
+		b := make([]byte, 1024)
 
 		for {
 			if le.ExternalExec {
@@ -428,7 +406,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				break
 			}
 			if !ok {
-				le.Input(string(b[:n]))
+				le.Input(k)
 			}
 		}
 		ci.IsConnected = false
