@@ -58,8 +58,20 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
 	le.luaState.SetGlobal("getOutputMode", le.luaState.NewFunction(le.getOutputMode))
 	le.luaState.SetGlobal("setInputLimit", le.luaState.NewFunction(le.setInputLimit))
+	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
+	le.luaState.SetGlobal("getUserNickname", le.luaState.NewFunction(le.getUserNickname))
 
 	return le
+}
+
+func (le *LuaExtender) getUserNickname(l *lua.LState) int {
+	l.Push(lua.LString(le.Ci.User.Nickname))
+	return 1
+}
+
+func (le *LuaExtender) getUser(l *lua.LState) int {
+	l.Push(&lua.LUserData{Value: le.Ci.User})
+	return 1
 }
 
 func (le *LuaExtender) setOutputDelay(l *lua.LState) int {

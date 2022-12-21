@@ -47,6 +47,9 @@ function ExitConnection()
     print("quit user")
     cls()
     write("\r\nbye!\r\n")
+    write("user nick: ")
+    write(getUserNickname())
+    write("\r\n")
     quit()
 end
 

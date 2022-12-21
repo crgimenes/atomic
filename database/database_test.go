@@ -261,3 +261,64 @@ func TestDatabase_CreateUser(t *testing.T) {
 	}
 
 }
+
+func TestDatabase_CheckAndReturnUser(t *testing.T) {
+
+	connectionString = ":memory:"
+
+	db, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		e := db.Close()
+		if e != nil {
+			t.Fatal(e)
+		}
+	}()
+
+	err = db.createMigrationTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.RunMigration()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nickname := "test"
+	email := "test@test"
+	password := "test1234567"
+
+	u, err := db.CreateUser(
+		nickname,
+		email,
+		password,
+		"",
+		"",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	u, err = db.CheckAndReturnUser(nickname, password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if u.Nickname != nickname {
+		t.Fatal("Nickname not equal")
+	}
+
+	u, err = db.CheckAndReturnUser(nickname, "wrongpassword")
+	if err != ErrInvalidCredentials {
+		t.Fatal("Expected ErrInvalidCredentials")
+	}
+
+	u, err = db.CheckAndReturnUser("wrongnickname", password)
+	if err != ErrInvalidCredentials {
+		t.Fatal("Expected ErrInvalidCredentials")
+	}
+
+}

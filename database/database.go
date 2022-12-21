@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 
@@ -22,6 +23,7 @@ var (
 	ErrEmailEmpty               = errors.New("email is required")
 	ErrPasswordOrSSHKeyRequired = errors.New("password or ssh public key is required")
 	ErrPasswordTooShort         = errors.New("password must be at least 8 characters")
+	ErrInvalidCredentials       = errors.New("invalid credentials")
 
 	connectionString = `file:atomic.db?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`
 )
@@ -233,6 +235,27 @@ func (d *Database) GetUserByNickname(nickname string) (User, error) {
 	err := d.db.QueryRowx(`SELECT * FROM users WHERE nickname = $1`, nickname).StructScan(&user)
 	if err != nil {
 		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (d *Database) CheckAndReturnUser(nickname, password string) (User, error) {
+	user, err := d.GetUserByNickname(nickname)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return User{}, ErrInvalidCredentials
+		}
+		return User{}, err
+	}
+
+	if user.Password == "" {
+		return User{}, ErrInvalidCredentials
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return User{}, ErrInvalidCredentials
 	}
 
 	return user, nil

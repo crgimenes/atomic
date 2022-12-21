@@ -43,18 +43,45 @@ func (s *SSHServer) authLogCallback(c ssh.ConnMetadata, method string, err error
 	log.Printf("Successful authentication for %q from %v, method %v", c.User(), c.RemoteAddr(), method)
 }
 
-func (s *SSHServer) passwordCallback(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+func (s *SSHServer) passwordCallback(c ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
 	log.Println("password callback")
-	if c.User() == "foo" && string(pass) == "bar" {
-		log.Printf("user %v authenticated with password", c.User())
 
-		s.Users[c.User()] = database.User{ // TODO: get user from database
-			Nickname: c.User(),
-		}
+	return s.validateLogin(c.User(), string(password))
+}
 
-		return nil, nil
+func (s *SSHServer) keyboardInteractiveCallback(c ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
+	log.Println("keyboard interactive callback")
+
+	answers, err := client("", "", []string{"Password:"}, []bool{true})
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("password rejected for %q", c.User())
+
+	password := ""
+	if len(answers) != 1 {
+		password = answers[0]
+	}
+
+	return s.validateLogin(c.User(), password)
+}
+
+func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, error) {
+	db, err := database.New()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	user, err := db.CheckAndReturnUser(nickname, password)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mux.Lock()
+	s.Users[nickname] = user
+	s.mux.Unlock()
+
+	return nil, nil
 }
 
 func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
@@ -146,23 +173,6 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 			"pubkey-fp": ssh.FingerprintSHA256(key),
 		},
 	}, nil
-}
-
-func (s *SSHServer) keyboardInteractiveCallback(conn ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
-	log.Println("keyboard interactive callback")
-	if conn.User() == "foo" {
-		// We don't care about the provided instructions or echos.
-		// We only accept one answer, and it must be "bar".
-		answers, err := client("", "", []string{"Password:"}, []bool{true})
-		if err != nil {
-			return nil, err
-		}
-		if len(answers) != 1 || answers[0] != "bar" {
-			return nil, fmt.Errorf("keyboard-interactive challenge failed")
-		}
-		return nil, nil
-	}
-	return nil, fmt.Errorf("keyboard-interactive challenge failed")
 }
 
 func (s *SSHServer) bannerCallback(conn ssh.ConnMetadata) string {
