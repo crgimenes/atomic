@@ -33,18 +33,6 @@ func validateRequiredFiles() bool {
 		ret = false
 	}
 
-	// validate if authorized_keys exists
-	_, err = os.Stat("authorized_keys")
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Fatal(err)
-		}
-		fmt.Println("authorized_keys not found")
-		fmt.Println("run: touch authorized_keys")
-		fmt.Println("You *must* use the authorized_keys to sysop login public key. Do not put user public keys in it. The user's public keys are stored in the \"atomic.db\" database.")
-		ret = false
-	}
-
 	// validate if atomic.db exists
 	_, err = os.Stat("atomic.db")
 	if err != nil {
