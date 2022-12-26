@@ -62,8 +62,14 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
 	le.luaState.SetGlobal("hasGroup", le.luaState.NewFunction(le.hasGroup))
+	le.luaState.SetGlobal("setMaxInputLength", le.luaState.NewFunction(le.setMaxInputLength))
 
 	return le
+}
+
+func (le *LuaExtender) setMaxInputLength(l *lua.LState) int {
+	le.Ci.Term.MaxInputLength = int(l.ToNumber(1))
+	return 0
 }
 
 func (le *LuaExtender) hasGroup(l *lua.LState) int {

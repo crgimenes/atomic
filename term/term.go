@@ -392,14 +392,14 @@ func (t *Term) Input(s string) {
 					}
 
 					var (
-						final  = make([]rune, len(t.InputField[t.bufferPosition:]))
-						inicio = make([]rune, len(t.InputField[:t.bufferPosition]))
+						end   = make([]rune, len(t.InputField[t.bufferPosition:]))
+						start = make([]rune, len(t.InputField[:t.bufferPosition]))
 					)
-					copy(final, t.InputField[t.bufferPosition:])
-					copy(inicio, t.InputField)
-					inicio = append(inicio, c)
-					inicio = append(inicio, final...)
-					t.InputField = inicio
+					copy(end, t.InputField[t.bufferPosition:])
+					copy(start, t.InputField)
+					start = append(start, c)
+					start = append(start, end...)
+					t.InputField = start
 
 					t.bufferPosition++
 
