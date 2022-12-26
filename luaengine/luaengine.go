@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -60,8 +61,22 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
+	le.luaState.SetGlobal("hasGroup", le.luaState.NewFunction(le.hasGroup))
 
 	return le
+}
+
+func (le *LuaExtender) hasGroup(l *lua.LState) int {
+	group := l.ToString(1)
+	groups := strings.Split(le.Ci.User.Groups, ",")
+	for _, g := range groups {
+		if g == group {
+			l.Push(lua.LBool(true))
+			return 1
+		}
+	}
+	l.Push(lua.LBool(false))
+	return 1
 }
 
 func (le *LuaExtender) getUser(l *lua.LState) int {
