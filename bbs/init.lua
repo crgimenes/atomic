@@ -9,7 +9,9 @@ end
 cls()
 menu()
 
-
+printf = function(s, ...)
+    return io.write(s:format(...))
+end
 
 -- setOutputDelay(1) -- 1ms delay between each character
 
@@ -44,7 +46,9 @@ function ExecTest()
 end
 
 function ExitConnection()
-    print("quit user")
+    -- print("quit user", getUserNickname())
+    -- printf("quit user %s\n", getUserNickname())
+    logf("quit user %s", getUserNickname())
     cls()
     write("\r\nbye!\r\n")
     write("user nick: ")
@@ -54,11 +58,11 @@ function ExitConnection()
 end
 
 function TestPrint()
-    write("Você digitou: ")
+    write("\n\r\n\rtest: ")
     write(Str)
-    write("\r\n")
-    inlineImagesProtocol("nonfree/crg.png")
-    write("\r\n")
+    -- write("\r\n")
+    -- inlineImagesProtocol("nonfree/crg.png")
+    write("\r\n\r\n")
 end
 
 Echo = false
@@ -91,26 +95,50 @@ function menu()
     write("[3] quit\r\n")
     write("[4] zsh\r\n")
     write("[5] Show Term parameters\r\n")
+    write("[6] Show Squiddy\r\n")
+    write("[7] Show Users\r\n")
     write("choose an option\r\n")
+
 end
 
 function ShowTerm()
-    write("\r\nTERM:")
+    write("\r\n\r\nTERM:")
     local lang = getEnv("LANG")
     write(lang)
     write("\r\nOUTPUT MODE:")
     write(getOutputMode())
-    write("\r\n")
+    write("\r\n\r\n")
     menu()
 end
 
 function ShowSquiddy()
     writeFromASCII("nonfree/squiddy.ans")
     write("\r\n")
+end
+
+function ShowUsers()
+
+    write("\r\n")
+    write("user nick: ")
+    u = getUser()
+    write(u.nickname)
+    write("\r\n")
+
+    write("user:")
+    write("\r\n")
+
+    for k, v in pairs(u) do
+        write("\t")
+        write(k)
+        write(":")
+        write(v)
+        write("\r\n")
+    end
+    write("\r\n")
+
     menu()
 end
 
-menu()
 timer("clock", 1100, Clock)
 
 trigger("1", ToggleEcho)
@@ -119,6 +147,7 @@ trigger("3", ExitConnection)
 trigger("4", ExecTest)
 trigger("5", ShowTerm)
 trigger("6", ShowSquiddy)
+trigger("7", ShowUsers)
 
 
 
@@ -131,9 +160,12 @@ else
 end
 write("\r\n")
 
+
+ShowUsers()
+
 while true do
     write("\nenter a string:")
-    local Str = getField()
+    Str = getField()
     write("\r\n")
     write("[")
     write(Str)

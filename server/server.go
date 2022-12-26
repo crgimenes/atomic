@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -25,13 +24,13 @@ type SSHServer struct {
 	mux   sync.Mutex
 	proto *lua.FunctionProto
 	cfg   config.Config
-	Users map[string]database.User
+	Users map[string]*database.User
 }
 
 func New(cfg config.Config) *SSHServer {
 	return &SSHServer{
 		cfg:   cfg,
-		Users: make(map[string]database.User),
+		Users: make(map[string]*database.User),
 	}
 }
 
@@ -40,6 +39,7 @@ func (s *SSHServer) authLogCallback(c ssh.ConnMetadata, method string, err error
 		log.Printf("Failed authentication for %q from %v, method %v, error: %v", c.User(), c.RemoteAddr(), method, err)
 		return
 	}
+	log.Println("auth log callback", s.Users[c.User()].Nickname)
 	log.Printf("Successful authentication for %q from %v, method %v", c.User(), c.RemoteAddr(), method)
 }
 
@@ -78,7 +78,7 @@ func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, 
 	}
 
 	s.mux.Lock()
-	s.Users[nickname] = user
+	s.Users[nickname] = &user
 	s.mux.Unlock()
 
 	return nil, nil
@@ -90,53 +90,6 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 		c.RemoteAddr(),
 		key.Type(),
 		ssh.FingerprintSHA256(key))
-
-	//////////////////////////////////////////////
-	// sysop user
-	//////////////////////////////////////////////
-
-	if c.User() == "sysop" {
-		authorizedKeysBytes, err := ioutil.ReadFile("authorized_keys")
-		if err != nil {
-			log.Fatalf("Failed to load authorized_keys, err: %v", err)
-		}
-
-		authorizedKeysMap := map[string]bool{}
-		for len(authorizedKeysBytes) > 0 {
-			pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeysBytes)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			authorizedKeysMap[string(pubKey.Marshal())] = true
-			authorizedKeysBytes = rest
-
-			log.Printf("authorized key fingerprint: %s, %s", pubKey.Type(), ssh.FingerprintSHA256(pubKey))
-		}
-
-		if !authorizedKeysMap[string(key.Marshal())] {
-			return nil, fmt.Errorf("error validating public key for sysop")
-		}
-
-		// TODO: verificar se o sysop existe no banco de dados
-		// se existir carregar os dados do banco de dados.
-		// se não existir, criar o sysop no banco de dados.
-
-		s.Users[c.User()] = database.User{ // TODO: get user from database
-			Nickname: c.User(),
-		}
-
-		return &ssh.Permissions{
-			Extensions: map[string]string{
-				"pubkey-fp": ssh.FingerprintSHA256(key),
-			},
-		}, nil
-
-	}
-
-	//////////////////////////////////////////////
-	// normal user
-	//////////////////////////////////////////////
 
 	db, err := database.New()
 	if err != nil {
@@ -165,7 +118,15 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 		return nil, fmt.Errorf("error validating public key for %q", c.User())
 	}
 
-	s.Users[c.User()] = user // TODO: add last login date time
+	s.Users[c.User()] = &user // TODO: add last login date time
+
+	log.Printf("stu user %q, %q\n", user.Nickname, user.Email)
+	log.Printf("map user %q, %q\n", s.Users[c.User()].Nickname, s.Users[c.User()].Email)
+
+	// list all users
+	for k, u := range s.Users {
+		log.Printf("%v, user %q, %q\n", k, u.Nickname, u.Email)
+	}
 
 	return &ssh.Permissions{
 		// Record the public key used for authentication.
@@ -176,13 +137,25 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 }
 
 func (s *SSHServer) bannerCallback(conn ssh.ConnMetadata) string {
-	return "Welcome to Atomic\n"
-	// ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no localhost -p 2200
+	dafaltBanner := []byte("Welcome to Atomic\n")
 
-	// supported key types
-	// ssh-keygen -t ecdsa -b 521
-	// ssh-keygen -t ed25519
+	f := filepath.Join(s.cfg.BaseBBSDir, "banner")
 
+	_, err := os.Stat(f)
+	if err != nil {
+		log.Printf("failed to stat banner file, %v", err.Error())
+
+		return string(dafaltBanner)
+	}
+
+	b, err := os.ReadFile(f)
+	if err != nil {
+		log.Printf("failed to read banner file, %v", err.Error())
+
+		return string(dafaltBanner)
+	}
+
+	return string(b)
 }
 
 func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
@@ -276,8 +249,9 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	le := luaengine.New(s.cfg)
 	le.Users = &s.Users
 	ci := client.NewInstance(conn, term)
-	le.Ci = ci
 	ci.User = s.Users[serverConn.User()]
+	le.Ci = ci
+
 	if s.proto == nil {
 		log.Printf("compiling init BBS code\n")
 		s.proto, err = le.Compile("init.lua")
@@ -304,13 +278,12 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				}
 
 				//////////////////////////////
+
 				_, ok := s.Users[serverConn.User()]
 				if !ok {
-					log.Printf("user %v not found\n", serverConn.User())
-					// add user
-					s.Users[serverConn.User()] = database.User{
-						Nickname: serverConn.User(),
-					}
+					log.Printf("user %v not found, recreating\n", serverConn.User())
+					// TODO: user is reconnecting, but not found in the list
+					return
 				}
 
 				// list users
@@ -420,7 +393,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			}
 		}
 		ci.IsConnected = false
-		delete(s.Users, serverConn.User())
+		//delete(s.Users, serverConn.User())
 	}()
 }
 

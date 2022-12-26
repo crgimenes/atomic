@@ -25,11 +25,11 @@ import (
 type LuaExtender struct {
 	mutex        sync.RWMutex
 	luaState     *lua.LState
-	Ci           client.Instance
+	Ci           *client.Instance
 	triggerList  map[string]*lua.LFunction
 	Proto        *lua.FunctionProto
 	ExternalExec bool
-	Users        *map[string]database.User
+	Users        *map[string]*database.User
 }
 
 // New creates a new instance of LuaExtender.
@@ -37,40 +37,58 @@ func New(cfg config.Config) *LuaExtender {
 	le := &LuaExtender{}
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.luaState = lua.NewState()
+	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.clearTriggers))
+	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
+	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
+	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
+	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
+	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
+	le.luaState.SetGlobal("getOutputMode", le.luaState.NewFunction(le.getOutputMode))
+	le.luaState.SetGlobal("getPassword", le.luaState.NewFunction(le.getPassword))
+	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
+	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
+	le.luaState.SetGlobal("logf", le.luaState.NewFunction(le.logf))
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
+	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
+	le.luaState.SetGlobal("rmTrigger", le.luaState.NewFunction(le.removeTrigger))
+	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
+	le.luaState.SetGlobal("setInputLimit", le.luaState.NewFunction(le.setInputLimit))
+	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
+	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
 	le.luaState.SetGlobal("timer", le.luaState.NewFunction(le.timer))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
-	le.luaState.SetGlobal("rmTrigger", le.luaState.NewFunction(le.removeTrigger))
-	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.clearTriggers))
-	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
-	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
-	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
-	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
-	le.luaState.SetGlobal("getPassword", le.luaState.NewFunction(le.getPassword))
 	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
-	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
-	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
-	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
-	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
-	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
-	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
-	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
-	le.luaState.SetGlobal("getOutputMode", le.luaState.NewFunction(le.getOutputMode))
-	le.luaState.SetGlobal("setInputLimit", le.luaState.NewFunction(le.setInputLimit))
 	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
-	le.luaState.SetGlobal("getUserNickname", le.luaState.NewFunction(le.getUserNickname))
 
 	return le
 }
 
-func (le *LuaExtender) getUserNickname(l *lua.LState) int {
-	l.Push(lua.LString(le.Ci.User.Nickname))
+func (le *LuaExtender) getUser(l *lua.LState) int {
+	u := le.Ci.User
+	tbl := l.NewTable()
+	l.SetField(tbl, "id", lua.LNumber(u.ID))
+	l.SetField(tbl, "nickname", lua.LString(u.Nickname))
+	l.SetField(tbl, "email", lua.LString(u.Email))
+	l.SetField(tbl, "groups", lua.LString(u.Groups))
+	l.SetField(tbl, "created_at", lua.LString(u.CreatedAt))
+	l.SetField(tbl, "updated_at", lua.LString(u.UpdatedAt))
+	l.Push(tbl)
 	return 1
 }
 
-func (le *LuaExtender) getUser(l *lua.LState) int {
-	l.Push(&lua.LUserData{Value: le.Ci.User})
+func (le *LuaExtender) logf(l *lua.LState) int {
+	format := l.ToString(1)
+	args := make([]interface{}, l.GetTop()-1)
+	for i := 2; i <= l.GetTop(); i++ {
+		args[i-2] = l.ToString(i)
+	}
+	log.Printf(format, args...)
+	return 0
+}
+
+func (le *LuaExtender) getUserNickname(l *lua.LState) int {
+	l.Push(lua.LString(le.Ci.User.Nickname))
 	return 1
 }
 
@@ -303,7 +321,7 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 func (le *LuaExtender) quit(l *lua.LState) int {
 	le.Ci.Conn.Close()
 	le.Ci.IsConnected = false
-	delete(*le.Users, le.Ci.User.Nickname)
+	//delete(*le.Users, le.Ci.User.Nickname)
 	return 0
 }
 

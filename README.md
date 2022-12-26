@@ -6,8 +6,15 @@
 
 Create RSA key pair
 
-```console
+```bash
 ssh-keygen -t rsa
+```
+
+```bash
+ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no localhost -p 2200
+supported key types
+ssh-keygen -t ecdsa -b 521
+ssh-keygen -t ed25519
 ```
 
 ## Contributing
@@ -15,6 +22,6 @@ ssh-keygen -t rsa
 - Fork the repo on GitHub
 - Clone the project to your own machine
 - Create a *branch* with your modifications `git checkout -b fantastic-feature`.
-- Then _commit_ your changes `git commit -m 'Implementation of new fantastic feature'`
-- Make a _push_ to your _branch_ `git push origin fantastic-feature`.
+- Then *commit* your changes `git commit -m 'Implementation of new fantastic feature'`
+- Make a *push* to your *branch* `git push origin fantastic-feature`.
 - Submit a **Pull Request** so that we can review your changes
