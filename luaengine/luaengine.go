@@ -58,12 +58,13 @@ func New(cfg config.Config) *LuaExtender {
 	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
 	le.luaState.SetGlobal("timer", le.luaState.NewFunction(le.timer))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
-	le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
+	//le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
 	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
 	le.luaState.SetGlobal("hasGroup", le.luaState.NewFunction(le.hasGroup))
 	le.luaState.SetGlobal("setMaxInputLength", le.luaState.NewFunction(le.setMaxInputLength))
 
+	le.luaState.PreloadModule("term", le.termLoader)
 	return le
 }
 
@@ -106,11 +107,6 @@ func (le *LuaExtender) logf(l *lua.LState) int {
 	}
 	log.Printf(format, args...)
 	return 0
-}
-
-func (le *LuaExtender) getUserNickname(l *lua.LState) int {
-	l.Push(lua.LString(le.Ci.User.Nickname))
-	return 1
 }
 
 func (le *LuaExtender) setOutputDelay(l *lua.LState) int {

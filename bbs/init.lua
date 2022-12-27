@@ -1,3 +1,4 @@
+Term = require("term")
 require "main_menu"
 
 if (getEnv("LANG") == "") then
@@ -15,27 +16,27 @@ end
 
 -- setOutputDelay(1) -- 1ms delay between each character
 
-write("\r\n")
-write("\r\nthis is a test write to client instance\r\n")
-write(" ██████╗██████╗  ██████╗    ███████╗████████╗██╗   ██████╗ ██████╗\r\n")
-write("██╔════╝██╔══██╗██╔════╝    ██╔════╝╚══██╔══╝██║   ██╔══██╗██╔══██╗\r\n")
-write("██║     ██████╔╝██║  ███╗   █████╗     ██║   ██║   ██████╔╝██████╔╝\r\n")
-write("██║     ██╔══██╗██║   ██║   ██╔══╝     ██║   ██║   ██╔══██╗██╔══██╗\r\n")
-write("╚██████╗██║  ██║╚██████╔╝██╗███████╗   ██║   ██║██╗██████╔╝██║  ██║\r\n")
-write(" ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝\r\n")
-write("crg@crg.eti.br @crgimenes\r\n")
-write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
-write("\r\n")
+Term.write("\r\n")
+Term.write("\r\nthis is a test write to client instance\r\n")
+Term.write(" ██████╗██████╗  ██████╗    ███████╗████████╗██╗   ██████╗ ██████╗\r\n")
+Term.write("██╔════╝██╔══██╗██╔════╝    ██╔════╝╚══██╔══╝██║   ██╔══██╗██╔══██╗\r\n")
+Term.write("██║     ██████╔╝██║  ███╗   █████╗     ██║   ██║   ██████╔╝██████╔╝\r\n")
+Term.write("██║     ██╔══██╗██║   ██║   ██╔══╝     ██║   ██║   ██╔══██╗██╔══██╗\r\n")
+Term.write("╚██████╗██║  ██║╚██████╔╝██╗███████╗   ██║   ██║██╗██████╔╝██║  ██║\r\n")
+Term.write(" ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝   ╚═╝   ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝\r\n")
+Term.write("crg@crg.eti.br @crgimenes\r\n")
+Term.write("██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██  ██\r\n")
+Term.write("\r\n")
 
 
 if (fileExists("nonfree/squiddy.ans")) then
     writeFromASCII("nonfree/squiddy.ans")
-    write("\r\n")
+    Term.write("\r\n")
 end
 
 Str = ""
 
-write("output test with accented characters: áéíóú äëïöü ãõ ç\r\n")
+Term.write("output test with accented characters: áéíóú äëïöü ãõ ç\r\n")
 
 -- setOutputDelay(0) -- no delay between each character
 
@@ -46,23 +47,19 @@ function ExecTest()
 end
 
 function ExitConnection()
-    -- print("quit user", getUserNickname())
-    -- printf("quit user %s\n", getUserNickname())
-    logf("quit user %s", getUserNickname())
+    local u = getUser()
+    logf("quit user %s", u.nickname)
     cls()
-    write("\r\nbye!\r\n")
-    write("user nick: ")
-    write(getUserNickname())
-    write("\r\n")
+    Term.write("\r\nbye!\r\n")
     quit()
 end
 
 function TestPrint()
-    write("\n\r\n\rtest: ")
-    write(Str)
+    Term.write("\n\r\n\rtest: ")
+    Term.write(Str)
     -- write("\r\n")
     -- inlineImagesProtocol("nonfree/crg.png")
-    write("\r\n\r\n")
+    Term.write("\r\n\r\n")
 end
 
 Echo = false
@@ -75,66 +72,66 @@ clockAux = ""
 clockInt = 0
 function Clock()
     -- setOutputDelay(0)
-    write("\027[s") -- save cursor position ANSI.SYS
-    write("\027[?25l") -- hide cursor
+    Term.write("\027[s") -- save cursor position ANSI.SYS
+    Term.write("\027[?25l") -- hide cursor
 
-    write("\0277\27[0;0H") -- save cursor (DEC) and move cursor to 0,0
-    write(os.date('%Y-%m-%d %H:%M:%S'))
+    Term.write("\0277\27[0;0H") -- save cursor (DEC) and move cursor to 0,0
+    Term.write(os.date('%Y-%m-%d %H:%M:%S'))
     -- os.date("%Y-%m-%dT%H:%m:%S.000 %z"
-    write("\0278") -- restore cursor (DEC)
+    Term.write("\0278") -- restore cursor (DEC)
     -- rmTrigger("clock")
 
-    write("\027[?25h") -- show cursor
-    write("\027[u") -- restore cursor position ANSI.SYS
+    Term.write("\027[?25h") -- show cursor
+    Term.write("\027[u") -- restore cursor position ANSI.SYS
     -- setOutputDelay(1)
 end
 
 function menu()
-    write("[1] toggle echo on/off\r\n")
-    write("[2] print test string\r\n")
-    write("[3] quit\r\n")
-    write("[4] zsh\r\n")
-    write("[5] Show Term parameters\r\n")
-    write("[6] Show Squiddy\r\n")
-    write("[7] Show Users\r\n")
-    write("choose an option\r\n")
+    Term.write("[1] toggle echo on/off\r\n")
+    Term.write("[2] print test string\r\n")
+    Term.write("[3] quit\r\n")
+    Term.write("[4] zsh\r\n")
+    Term.write("[5] Show Term parameters\r\n")
+    Term.write("[6] Show Squiddy\r\n")
+    Term.write("[7] Show Users\r\n")
+    Term.write("choose an option\r\n")
 
 end
 
 function ShowTerm()
-    write("\r\n\r\nTERM:")
+    Term.write("\r\n\r\nTERM:")
     local lang = getEnv("LANG")
-    write(lang)
-    write("\r\nOUTPUT MODE:")
-    write(getOutputMode())
-    write("\r\n\r\n")
+    Term.write(lang)
+    Term.write("\r\nOUTPUT MODE:")
+    Term.write(getOutputMode())
+    Term.write("\r\n\r\n")
     menu()
 end
 
 function ShowSquiddy()
     writeFromASCII("nonfree/squiddy.ans")
-    write("\r\n")
+    Term.write("\r\n")
 end
 
 function ShowUsers()
 
-    write("\r\n")
-    write("user nick: ")
+    Term.write("\r\n")
+    Term.write("user nick: ")
     u = getUser()
-    write(u.nickname)
-    write("\r\n")
+    Term.write(u.nickname)
+    Term.write("\r\n")
 
-    write("user:")
-    write("\r\n")
+    Term.write("user:")
+    Term.write("\r\n")
 
     for k, v in pairs(u) do
-        write("\t")
-        write(k)
-        write(":")
-        write(v)
-        write("\r\n")
+        Term.write("\t")
+        Term.write(k)
+        Term.write(":")
+        Term.write(v)
+        Term.write("\r\n")
     end
-    write("\r\n")
+    Term.write("\r\n")
 
     menu()
 end
@@ -151,25 +148,25 @@ trigger("7", ShowUsers)
 
 
 
-write("\r\nLANG = ")
+Term.write("\r\nLANG = ")
 local lang = getEnv("LANG")
 if (lang == "") then
-    write("empty")
+    Term.write("empty")
 else
-    write(lang)
+    Term.write(lang)
 end
-write("\r\n")
+Term.write("\r\n")
 
 
 ShowUsers()
 
 while true do
-    write("\nenter a string:")
+    Term.write("\nenter a string:")
     Str = getField()
-    write("\r\n")
-    write("[")
-    write(Str)
-    write("]")
-    write("\r\n")
+    Term.write("\r\n")
+    Term.write("[")
+    Term.write(Str)
+    Term.write("]")
+    Term.write("\r\n")
 end
 -- quit()

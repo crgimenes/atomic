@@ -1,4 +1,4 @@
 function menu()
     cls()
-    write("\r\nmainmenu\r\n")
+    Term.write("\r\nmainmenu\r\n")
 end
