@@ -319,7 +319,6 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				ci.Term.W, ci.Term.H = parseDims(req.Payload)
 				s.mux.Unlock()
 			case "env":
-				log.Println("env request")
 				err := req.Reply(true, nil)
 				if err != nil {
 					req.Reply(false, nil)
