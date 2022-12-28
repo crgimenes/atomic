@@ -118,7 +118,9 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 		return nil, fmt.Errorf("error validating public key for %q", c.User())
 	}
 
+	s.mux.Lock()
 	s.Users[c.User()] = &user // TODO: add last login date time
+	s.mux.Unlock()
 
 	log.Printf("stu user %q, %q\n", user.Nickname, user.Email)
 	log.Printf("map user %q, %q\n", s.Users[c.User()].Nickname, s.Users[c.User()].Email)
