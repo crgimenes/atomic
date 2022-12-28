@@ -242,6 +242,9 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		return
 	}
 
+	log.Printf("session id: %v", serverConn.SessionID())
+	// TODO: close serverConn.Conn.Close()
+
 	term := term.Term{
 		C:              conn,
 		InputTrigger:   make(chan struct{}),
@@ -250,7 +253,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}
 	le := luaengine.New(s.cfg)
 	le.Users = &s.Users
-	ci := client.NewInstance(conn, term)
+	ci := client.NewInstance(conn, serverConn, term)
 	ci.User = s.Users[serverConn.User()]
 	le.Ci = ci
 
@@ -394,6 +397,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			}
 		}
 		ci.IsConnected = false
+		serverConn.Conn.Close() // TODO: detect multiple connections
 		//delete(s.Users, serverConn.User())
 	}()
 }

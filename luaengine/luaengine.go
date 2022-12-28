@@ -338,6 +338,7 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 func (le *LuaExtender) quit(l *lua.LState) int {
 	le.Ci.Conn.Close()
 	le.Ci.IsConnected = false
+	le.Ci.ServerConn.Conn.Close()
 	//delete(*le.Users, le.Ci.User.Nickname)
 	return 0
 }

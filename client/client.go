@@ -17,14 +17,16 @@ type Instance struct {
 	IsConnected bool
 	Environment map[string]string
 	User        *database.User
+	ServerConn  *ssh.ServerConn
 }
 
-func NewInstance(conn ssh.Channel, term term.Term) *Instance {
+func NewInstance(conn ssh.Channel, serverConn *ssh.ServerConn, term term.Term) *Instance {
 	return &Instance{
 		Term:        term,
 		Conn:        conn,
 		IsConnected: true,
 		Environment: make(map[string]string),
 		User:        &database.User{},
+		ServerConn:  serverConn,
 	}
 }
