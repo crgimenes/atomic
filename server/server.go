@@ -299,6 +299,37 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 				//////////////////////////////
 
+				go func() {
+					b := make([]byte, 1024)
+
+					for {
+						if le.ExternalExec {
+							time.Sleep(100 * time.Millisecond)
+							continue
+						}
+						n, err := conn.Read(b)
+						if err != nil {
+							if err != io.EOF {
+								log.Println(err.Error())
+							}
+							break
+						}
+						k := string(b[:n])
+						ok, err := le.RunTrigger(k)
+						if err != nil {
+							log.Println("error RunTrigger", err.Error())
+							break
+						}
+						if !ok {
+							le.Input(k)
+						}
+					}
+					ci.IsConnected = false
+					ci.Conn.Close()
+					serverConn.Conn.Close() // TODO: detect multiple connections
+					delete(s.Users, serverConn.User())
+				}()
+
 				err = le.InitState()
 				if err != nil {
 					log.Printf("can't open %v file, %v\n", filepath.Join(s.cfg.BaseBBSDir, "init.lua"), err.Error())
@@ -371,36 +402,6 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		}
 	}()
 
-	go func() {
-		b := make([]byte, 1024)
-
-		for {
-			if le.ExternalExec {
-				time.Sleep(100 * time.Millisecond)
-				continue
-			}
-			n, err := conn.Read(b)
-			if err != nil {
-				if err != io.EOF {
-					log.Println(err.Error())
-				}
-				break
-			}
-			k := string(b[:n])
-			ok, err := le.RunTrigger(k)
-			if err != nil {
-				log.Println("error RunTrigger", err.Error())
-				break
-			}
-			if !ok {
-				le.Input(k)
-			}
-		}
-		ci.IsConnected = false
-		ci.Conn.Close()
-		serverConn.Conn.Close() // TODO: detect multiple connections
-		delete(s.Users, serverConn.User())
-	}()
 }
 
 // parseDims extracts terminal dimensions (width x height) from the provided buffer.
