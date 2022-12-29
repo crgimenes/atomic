@@ -399,7 +399,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		ci.IsConnected = false
 		ci.Conn.Close()
 		serverConn.Conn.Close() // TODO: detect multiple connections
-		//delete(s.Users, serverConn.User())
+		delete(s.Users, serverConn.User())
 	}()
 }
 
