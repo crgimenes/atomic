@@ -250,9 +250,7 @@ func (le *LuaExtender) getEnv(l *lua.LState) int {
 
 // RunTrigger executes a pre-configured trigger.
 func (le *LuaExtender) RunTrigger(name string) (bool, error) {
-	le.mutex.Lock()
 	f, ok := le.triggerList[name]
-	le.mutex.Unlock()
 	if !ok {
 		return false, nil
 	}
@@ -308,7 +306,9 @@ func (le *LuaExtender) timer(l *lua.LState) int {
 			if !le.Ci.IsConnected || !ok {
 				return
 			}
+			le.mutex.Lock()
 			ok, err := le.RunTrigger(n)
+			le.mutex.Unlock()
 			if err != nil {
 				log.Println(n, "timer trigger error", err)
 				return
@@ -439,7 +439,9 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 				log.Printf("2 <- n: %v (%v) %q", n, err, b[:n])
 				//le.ci.Conn.Write(b[:n])
 				//le.Input(string(b[:n]))
+				le.mutex.Lock()
 				ok, err := le.RunTrigger(string(b[:n]))
+				le.mutex.Unlock()
 				if err != nil {
 					log.Println("error RunTrigger", err.Error())
 					return
@@ -462,9 +464,12 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 
 		for {
 			// TODO: improve using a channels
+			le.mutex.Lock()
 			if !le.ExternalExec {
+				le.mutex.Unlock()
 				return
 			}
+			le.mutex.Unlock()
 			time.Sleep(100 * time.Millisecond)
 			w = le.Ci.Term.W
 			h = le.Ci.Term.H
@@ -482,7 +487,9 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	}()
 
 	cmd.Wait()
+	le.mutex.Lock()
 	le.ExternalExec = false
+	le.mutex.Unlock()
 
 	return 0
 }
