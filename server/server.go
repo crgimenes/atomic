@@ -324,6 +324,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 							le.Input(k)
 						}
 					}
+					le.ClearTriggers(nil)
 					ci.IsConnected = false
 					ci.Conn.Close()
 					serverConn.Conn.Close() // TODO: detect multiple connections
@@ -332,7 +333,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 				err = le.InitState()
 				if err != nil {
-					log.Printf("can't open %v file, %v\n", filepath.Join(s.cfg.BaseBBSDir, "init.lua"), err.Error())
+					log.Printf("error %v\n", err.Error())
 					os.Exit(1)
 				}
 

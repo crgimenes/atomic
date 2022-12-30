@@ -38,7 +38,7 @@ func New(cfg config.Config) *LuaExtender {
 	le := &LuaExtender{}
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.luaState = lua.NewState()
-	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.clearTriggers))
+	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.ClearTriggers))
 	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
 	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
 	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
@@ -279,7 +279,7 @@ func (le *LuaExtender) removeTrigger(l *lua.LState) int {
 	return 0
 }
 
-func (le *LuaExtender) clearTriggers(l *lua.LState) int {
+func (le *LuaExtender) ClearTriggers(l *lua.LState) int {
 	le.mutex.Lock()
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.mutex.Unlock()
@@ -414,6 +414,9 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 				log.Printf("1 <- n: %v (%v)", n, err)
 				return
 			}
+			if !le.Ci.IsConnected {
+				return
+			}
 		}
 	}()
 
@@ -447,6 +450,9 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 
 				return
 			}
+			if !le.Ci.IsConnected {
+				return
+			}
 		}
 	}()
 
@@ -468,6 +474,10 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 
 			SetWinsize(npty.Fd(), w, h)
 			sizeAux = fmt.Sprintf("%d;%d", w, h)
+
+			if !le.Ci.IsConnected {
+				return
+			}
 		}
 	}()
 

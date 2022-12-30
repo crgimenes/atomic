@@ -117,7 +117,7 @@ function ShowUsers()
 
     Term.write("\r\n")
     Term.write("user nick: ")
-    u = getUser()
+    local u = getUser()
     Term.write(u.nickname)
     Term.write("\r\n")
 
