@@ -11,8 +11,19 @@ Printf = function(s, ...)
     return io.write(s:format(...))
 end
 
-local function menu()
-    Term.write("[1] toggle echo on/off\r\n")
+function Menu()
+    clearTriggers()
+    timer("clock", 1100, Clock)
+    trigger("1", Main_menu)
+    trigger("2", TestPrint)
+    trigger("3", ExitConnection)
+    trigger("4", ExecTest)
+    trigger("5", ShowTerm)
+    trigger("6", ShowSquiddy)
+    trigger("7", ShowUsers)
+    Term.cls()
+
+    Term.write("[1] Main menu\r\n")
     Term.write("[2] print test string\r\n")
     Term.write("[3] quit\r\n")
     Term.write("[4] zsh\r\n")
@@ -52,7 +63,7 @@ Term.write("output test with accented characters: áéíóú äëïöü ãõ ç\
 function ExecTest()
     exec("zsh")
     Term.cls()
-    menu()
+    Menu()
 end
 
 function ExitConnection()
@@ -102,7 +113,7 @@ function ShowTerm()
     Term.write("\r\nOUTPUT MODE:")
     Term.write(Term.getOutputMode())
     Term.write("\r\n\r\n")
-    menu()
+    Menu()
 end
 
 function ShowSquiddy()
@@ -130,20 +141,8 @@ function ShowUsers()
     end
     Term.write("\r\n")
 
-    menu()
+    Menu()
 end
-
-timer("clock", 1100, Clock)
-
-trigger("1", ToggleEcho)
-trigger("2", TestPrint)
-trigger("3", ExitConnection)
-trigger("4", ExecTest)
-trigger("5", ShowTerm)
-trigger("6", ShowSquiddy)
-trigger("7", ShowUsers)
-
-
 
 Term.write("\r\nLANG = ")
 local lang = getEnv("LANG")

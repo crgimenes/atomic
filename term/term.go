@@ -98,7 +98,7 @@ func removeLastRune(s []rune) []rune {
 }
 
 func (t *Term) Clear() error {
-	_, err := io.WriteString(t.C, "\033[2J")
+	_, err := io.WriteString(t.C, "\033[2J\033[0;0H")
 	return err
 }
 
