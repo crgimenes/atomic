@@ -2,19 +2,19 @@ Term = require("term")
 require "main_menu"
 
 if (getEnv("LANG") == "") then
-    setOutputMode("CP850")
-    -- setOutputMode("CP437")
-    -- setOutputMode("UTF-8") -- default
+    Term.setOutputMode("CP850")
+    -- Term.setOutputMode("CP437")
+    -- Term.setOutputMode("UTF-8") -- default
 end
 
-cls()
+Term.cls()
 menu()
 
 printf = function(s, ...)
     return io.write(s:format(...))
 end
 
--- setOutputDelay(1) -- 1ms delay between each character
+-- Term.setOutputDelay(1) -- 1ms delay between each character
 
 Term.write("\r\n")
 Term.write("\r\nthis is a test write to client instance\r\n")
@@ -30,7 +30,7 @@ Term.write("\r\n")
 
 
 if (fileExists("nonfree/squiddy.ans")) then
-    writeFromASCII("nonfree/squiddy.ans")
+    Term.writeFromASCII("nonfree/squiddy.ans")
     Term.write("\r\n")
 end
 
@@ -38,18 +38,18 @@ Str = ""
 
 Term.write("output test with accented characters: áéíóú äëïöü ãõ ç\r\n")
 
--- setOutputDelay(0) -- no delay between each character
+-- Term.setOutputDelay(0) -- no delay between each character
 
 function ExecTest()
     exec("zsh")
-    cls()
+    Term.cls()
     menu()
 end
 
 function ExitConnection()
     local u = getUser()
     logf("quit user %s", u.nickname)
-    cls()
+    Term.cls()
     Term.write("\r\nbye!\r\n")
     quit()
 end
@@ -58,20 +58,20 @@ function TestPrint()
     Term.write("\n\r\n\rtest: ")
     Term.write(Str)
     -- write("\r\n")
-    -- inlineImagesProtocol("nonfree/crg.png")
+    -- Term.inlineImagesProtocol("nonfree/crg.png")
     Term.write("\r\n\r\n")
 end
 
 Echo = false
 function ToggleEcho()
     Echo = not Echo
-    setEcho(Echo)
+    Term.setEcho(Echo)
 end
 
 clockAux = ""
 clockInt = 0
 function Clock()
-    -- setOutputDelay(0)
+    -- Term.setOutputDelay(0)
     Term.write("\027[s") -- save cursor position ANSI.SYS
     Term.write("\027[?25l") -- hide cursor
 
@@ -83,7 +83,7 @@ function Clock()
 
     Term.write("\027[?25h") -- show cursor
     Term.write("\027[u") -- restore cursor position ANSI.SYS
-    -- setOutputDelay(1)
+    -- Term.setOutputDelay(1)
 end
 
 function menu()
@@ -103,13 +103,13 @@ function ShowTerm()
     local lang = getEnv("LANG")
     Term.write(lang)
     Term.write("\r\nOUTPUT MODE:")
-    Term.write(getOutputMode())
+    Term.write(Term.getOutputMode())
     Term.write("\r\n\r\n")
     menu()
 end
 
 function ShowSquiddy()
-    writeFromASCII("nonfree/squiddy.ans")
+    Term.writeFromASCII("nonfree/squiddy.ans")
     Term.write("\r\n")
 end
 
@@ -162,7 +162,7 @@ ShowUsers()
 
 while true do
     Term.write("\nenter a string:")
-    Str = getField()
+    Str = Term.getField()
     Term.write("\r\n")
     Term.write("[")
     Term.write(Str)

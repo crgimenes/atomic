@@ -2,9 +2,7 @@ package luaengine
 
 import (
 	"bufio"
-	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -65,38 +63,20 @@ func New(cfg config.Config,
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.luaState = lua.NewState()
 	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.ClearTriggers))
-	le.luaState.SetGlobal("cls", le.luaState.NewFunction(le.cls))
 	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
 	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
 	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
-	le.luaState.SetGlobal("getField", le.luaState.NewFunction(le.getField))
-	le.luaState.SetGlobal("getOutputMode", le.luaState.NewFunction(le.getOutputMode))
-	le.luaState.SetGlobal("getPassword", le.luaState.NewFunction(le.getPassword))
-	le.luaState.SetGlobal("inlineImagesProtocol", le.luaState.NewFunction(le.inlineImagesProtocol))
-	le.luaState.SetGlobal("limitInputLength", le.luaState.NewFunction(le.limitInputLength))
 	le.luaState.SetGlobal("logf", le.luaState.NewFunction(le.logf))
 	le.luaState.SetGlobal("pwd", le.luaState.NewFunction(le.pwd))
 	le.luaState.SetGlobal("quit", le.luaState.NewFunction(le.quit))
 	le.luaState.SetGlobal("rmTrigger", le.luaState.NewFunction(le.removeTrigger))
-	le.luaState.SetGlobal("setEcho", le.luaState.NewFunction(le.setEcho))
-	le.luaState.SetGlobal("setInputLimit", le.luaState.NewFunction(le.setInputLimit))
-	le.luaState.SetGlobal("setOutputDelay", le.luaState.NewFunction(le.setOutputDelay))
-	le.luaState.SetGlobal("setOutputMode", le.luaState.NewFunction(le.setOutputMode))
 	le.luaState.SetGlobal("timer", le.luaState.NewFunction(le.timer))
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
-	//le.luaState.SetGlobal("write", le.luaState.NewFunction(le.write))
-	le.luaState.SetGlobal("writeFromASCII", le.luaState.NewFunction(le.writeFromASCII))
 	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
 	le.luaState.SetGlobal("hasGroup", le.luaState.NewFunction(le.hasGroup))
-	le.luaState.SetGlobal("setMaxInputLength", le.luaState.NewFunction(le.setMaxInputLength))
 
 	le.luaState.PreloadModule("term", le.termLoader)
 	return le
-}
-
-func (le *LuaExtender) setMaxInputLength(l *lua.LState) int {
-	le.Term.MaxInputLength = int(l.ToNumber(1))
-	return 0
 }
 
 func (le *LuaExtender) hasGroup(l *lua.LState) int {
@@ -135,30 +115,6 @@ func (le *LuaExtender) logf(l *lua.LState) int {
 	return 0
 }
 
-func (le *LuaExtender) setOutputDelay(l *lua.LState) int {
-	i := l.ToInt(1)
-	le.Term.SetOutputDelay(i)
-	return 0
-}
-
-func (le *LuaExtender) getOutputMode(l *lua.LState) int {
-	res := lua.LString(le.Term.GetOutputDisplay())
-	l.Push(res)
-	return 1
-}
-
-func (le *LuaExtender) setOutputMode(l *lua.LState) int {
-	s := l.ToString(1)
-	le.Term.SetOutputMode(s)
-	return 0
-}
-
-func (le *LuaExtender) limitInputLength(l *lua.LState) int {
-	i := l.ToInt(1)
-	le.Term.SetInputLimit(i)
-	return 0
-}
-
 func (le *LuaExtender) Close() error {
 	return le.Close()
 }
@@ -170,50 +126,6 @@ func (le *LuaExtender) Input(s string) {
 // GetState returns the state of the moon interpreter.
 func (le *LuaExtender) GetState() *lua.LState {
 	return le.luaState
-}
-
-func (le *LuaExtender) cls(l *lua.LState) int {
-	err := le.Term.Clear()
-	if err != nil {
-		log.Println(err)
-	}
-	return 0
-}
-
-func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
-	s := l.ToString(1)
-	le.Term.WriteFromASCII(s)
-
-	return 0
-}
-
-func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
-	s := l.ToString(1)
-
-	f, err := os.Open(s)
-	if err != nil {
-		log.Println(err)
-	}
-	reader := bufio.NewReader(f)
-	content, err := ioutil.ReadAll(reader)
-	if err != nil {
-		log.Println(err)
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(content)
-
-	le.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
-	le.Term.WriteString(encoded)
-	le.Term.WriteString("\a")
-
-	return 0
-}
-
-func (le *LuaExtender) write(l *lua.LState) int {
-	s := l.ToString(1)
-	le.Term.WriteString(s)
-
-	return 0
 }
 
 // CompileLua reads the passed lua file from disk and compiles it.
@@ -248,24 +160,6 @@ func (le *LuaExtender) InitState() error {
 	return le.DoCompiledFile(le.luaState, le.Proto)
 }
 
-func (le *LuaExtender) setInputLimit(l *lua.LState) int {
-	i := l.ToInt(1)
-	le.Term.SetInputLimit(i)
-	return 0
-}
-
-func (le *LuaExtender) getField(l *lua.LState) int {
-	res := lua.LString(le.Term.GetField())
-	l.Push(res)
-	return 1
-}
-
-func (le *LuaExtender) getPassword(l *lua.LState) int {
-	res := lua.LString(le.Term.GetField())
-	l.Push(res)
-	return 1
-}
-
 // getEnv returns the value of the environment variable named by the key.
 func (le *LuaExtender) getEnv(l *lua.LState) int {
 	key := l.ToString(1)
@@ -287,12 +181,6 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 		Protect: true, // return err or panic
 	})
 	return true, err
-}
-
-func (le *LuaExtender) setEcho(l *lua.LState) int {
-	b := l.ToBool(1)
-	le.Term.SetEcho(b)
-	return 0
 }
 
 func (le *LuaExtender) removeTrigger(l *lua.LState) int {

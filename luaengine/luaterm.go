@@ -1,10 +1,120 @@
 package luaengine
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"bufio"
+	"encoding/base64"
+	"io/ioutil"
+	"log"
+	"os"
+
+	lua "github.com/yuin/gopher-lua"
+)
+
+func (le *LuaExtender) write(l *lua.LState) int {
+	s := l.ToString(1)
+	le.Term.WriteString(s)
+
+	return 0
+}
+
+func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
+	s := l.ToString(1)
+	le.Term.WriteFromASCII(s)
+
+	return 0
+}
+
+func (le *LuaExtender) cls(l *lua.LState) int {
+	err := le.Term.Clear()
+	if err != nil {
+		log.Println(err)
+	}
+	return 0
+}
+
+func (le *LuaExtender) setMaxInputLength(l *lua.LState) int {
+	le.Term.MaxInputLength = int(l.ToNumber(1))
+	return 0
+}
+
+func (le *LuaExtender) setEcho(l *lua.LState) int {
+	b := l.ToBool(1)
+	le.Term.SetEcho(b)
+	return 0
+}
+
+func (le *LuaExtender) setInputLimit(l *lua.LState) int {
+	i := l.ToInt(1)
+	le.Term.SetInputLimit(i)
+	return 0
+}
+
+func (le *LuaExtender) setOutputDelay(l *lua.LState) int {
+	i := l.ToInt(1)
+	le.Term.SetOutputDelay(i)
+	return 0
+}
+
+func (le *LuaExtender) setOutputMode(l *lua.LState) int {
+	s := l.ToString(1)
+	le.Term.SetOutputMode(s)
+	return 0
+}
+
+func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
+	s := l.ToString(1)
+
+	f, err := os.Open(s)
+	if err != nil {
+		log.Println(err)
+	}
+	reader := bufio.NewReader(f)
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		log.Println(err)
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(content)
+
+	le.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
+	le.Term.WriteString(encoded)
+	le.Term.WriteString("\a")
+
+	return 0
+}
+
+func (le *LuaExtender) getField(l *lua.LState) int {
+	res := lua.LString(le.Term.GetField())
+	l.Push(res)
+	return 1
+}
+
+func (le *LuaExtender) getOutputMode(l *lua.LState) int {
+	res := lua.LString(le.Term.GetOutputDisplay())
+	l.Push(res)
+	return 1
+}
+
+func (le *LuaExtender) getPassword(l *lua.LState) int {
+	res := lua.LString(le.Term.GetField())
+	l.Push(res)
+	return 1
+}
 
 func (le *LuaExtender) termLoader(L *lua.LState) int {
 	var termAPI = map[string]lua.LGFunction{
-		"write": le.write,
+		"cls":                  le.cls,
+		"inlineImagesProtocol": le.inlineImagesProtocol,
+		"getField":             le.getField,
+		"getPassword":          le.getPassword,
+		"getOutputMode":        le.getOutputMode,
+		"setMaxInputLength":    le.setMaxInputLength,
+		"setEcho":              le.setEcho,
+		"setInputLimit":        le.setInputLimit,
+		"setOutputDelay":       le.setOutputDelay,
+		"setOutputMode":        le.setOutputMode,
+		"write":                le.write,
+		"writeFromASCII":       le.writeFromASCII,
 	}
 
 	t := le.luaState.NewTable()
