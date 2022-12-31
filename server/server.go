@@ -250,14 +250,15 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		OutputMode:     term.UTF8,
 		MaxInputLength: 80,
 	}
-	le := luaengine.New(s.cfg)
-	le.Users = &s.Users
-	le.User = s.Users[serverConn.User()]
-	le.Term = &term
-	le.ServerConn = serverConn
-	le.Conn = conn
-	le.Environment = make(map[string]string)
-	le.IsConnected = true
+
+	le := luaengine.New(
+		s.cfg,
+		&s.Users,
+		s.Users[serverConn.User()],
+		&term,
+		serverConn,
+		conn,
+	)
 
 	if s.proto == nil {
 		log.Printf("compiling init BBS code\n")

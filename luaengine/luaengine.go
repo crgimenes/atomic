@@ -45,8 +45,23 @@ type KeyValue struct {
 }
 
 // New creates a new instance of LuaExtender.
-func New(cfg config.Config) *LuaExtender {
-	le := &LuaExtender{}
+func New(cfg config.Config,
+	users *map[string]*database.User,
+	user *database.User,
+	term *term.Term,
+	serverConn *ssh.ServerConn,
+	conn ssh.Channel,
+) *LuaExtender {
+
+	le := &LuaExtender{
+		Users:       users,
+		User:        user,
+		Term:        term,
+		ServerConn:  serverConn,
+		Conn:        conn,
+		Environment: make(map[string]string),
+		IsConnected: true,
+	}
 	le.triggerList = make(map[string]*lua.LFunction)
 	le.luaState = lua.NewState()
 	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.ClearTriggers))
