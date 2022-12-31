@@ -257,6 +257,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	le.ServerConn = serverConn
 	le.Conn = conn
 	le.Environment = make(map[string]string)
+	le.IsConnected = true
 
 	if s.proto == nil {
 		log.Printf("compiling init BBS code\n")
