@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
 	"crg.eti.br/go/atomic/database"
 	"crg.eti.br/go/atomic/luaengine"
@@ -253,10 +252,11 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}
 	le := luaengine.New(s.cfg)
 	le.Users = &s.Users
-	ci := client.NewInstance(conn, serverConn)
-	ci.User = s.Users[serverConn.User()]
-	le.Ci = ci
+	le.User = s.Users[serverConn.User()]
 	le.Term = &term
+	le.ServerConn = serverConn
+	le.Conn = conn
+	le.Environment = make(map[string]string)
 
 	if s.proto == nil {
 		log.Printf("compiling init BBS code\n")
@@ -326,8 +326,8 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 						}
 					}
 					le.ClearTriggers(nil)
-					ci.IsConnected = false
-					ci.Conn.Close()
+					le.IsConnected = false
+					le.Conn.Close()
 					serverConn.Conn.Close() // TODO: detect multiple connections
 					delete(s.Users, serverConn.User())
 				}()
@@ -364,15 +364,15 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					return
 				}
 
-				if len(ci.Environment) > 1000 {
+				if len(le.Environment) > 1000 {
 					log.Println("too many env vars")
 					return
 				}
 
-				var p client.KeyValue
+				var p luaengine.KeyValue
 				ssh.Unmarshal(req.Payload, &p)
 				log.Printf("env: %s = %s", p.Key, p.Value)
-				ci.Environment[p.Key] = p.Value
+				le.Environment[p.Key] = p.Value
 				req.Reply(true, nil)
 
 			case "subsystem":

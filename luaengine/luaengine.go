@@ -14,25 +14,34 @@ import (
 	"time"
 	"unsafe"
 
-	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
 	"crg.eti.br/go/atomic/database"
 	"crg.eti.br/go/atomic/term"
 	"github.com/creack/pty"
 	lua "github.com/yuin/gopher-lua"
 	parse "github.com/yuin/gopher-lua/parse"
+	"golang.org/x/crypto/ssh"
 )
 
 // LuaExtender holds an instance of the moon interpreter and the state variables of the extensions we made.
 type LuaExtender struct {
 	mutex        sync.RWMutex
 	luaState     *lua.LState
-	Ci           *client.Instance
 	triggerList  map[string]*lua.LFunction
 	Proto        *lua.FunctionProto
 	ExternalExec bool
 	Users        *map[string]*database.User
+	User         *database.User
 	Term         *term.Term
+	ServerConn   *ssh.ServerConn
+	Conn         ssh.Channel
+	IsConnected  bool
+	Environment  map[string]string
+}
+
+type KeyValue struct {
+	Key   string
+	Value string
 }
 
 // New creates a new instance of LuaExtender.
@@ -77,7 +86,7 @@ func (le *LuaExtender) setMaxInputLength(l *lua.LState) int {
 
 func (le *LuaExtender) hasGroup(l *lua.LState) int {
 	group := l.ToString(1)
-	groups := strings.Split(le.Ci.User.Groups, ",")
+	groups := strings.Split(le.User.Groups, ",")
 	for _, g := range groups {
 		if g == group {
 			l.Push(lua.LBool(true))
@@ -89,7 +98,7 @@ func (le *LuaExtender) hasGroup(l *lua.LState) int {
 }
 
 func (le *LuaExtender) getUser(l *lua.LState) int {
-	u := le.Ci.User
+	u := le.User
 	tbl := l.NewTable()
 	l.SetField(tbl, "id", lua.LNumber(u.ID))
 	l.SetField(tbl, "nickname", lua.LString(u.Nickname))
@@ -245,7 +254,7 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 // getEnv returns the value of the environment variable named by the key.
 func (le *LuaExtender) getEnv(l *lua.LState) int {
 	key := l.ToString(1)
-	value := le.Ci.Environment[key]
+	value := le.Environment[key]
 	l.Push(lua.LString(value))
 	return 1
 }
@@ -305,7 +314,7 @@ func (le *LuaExtender) timer(l *lua.LState) int {
 			le.mutex.Lock()
 			_, ok := le.triggerList[n]
 			le.mutex.Unlock()
-			if !le.Ci.IsConnected || !ok {
+			if !le.IsConnected || !ok {
 				return
 			}
 			le.mutex.Lock()
@@ -338,10 +347,10 @@ func (le *LuaExtender) trigger(l *lua.LState) int {
 }
 
 func (le *LuaExtender) quit(l *lua.LState) int {
-	le.Ci.Conn.Close()
-	le.Ci.IsConnected = false
-	le.Ci.ServerConn.Conn.Close()
-	delete(*le.Users, le.Ci.User.Nickname)
+	le.Conn.Close()
+	le.IsConnected = false
+	le.ServerConn.Conn.Close()
+	delete(*le.Users, le.User.Nickname)
 	return 0
 }
 
@@ -398,12 +407,6 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	}
 
 	go func() {
-		/*
-			n, err := io.Copy(le.ci.Conn, npty)
-			if err != nil {
-				log.Printf("1 n: %v (%v)", n, err)
-			}
-		*/
 		for {
 			b := make([]byte, 8)
 			n, err := npty.Read(b)
@@ -411,12 +414,12 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 				log.Printf("1 -> n: %v (%v)", n, err)
 				return
 			}
-			_, err = le.Ci.Conn.Write(b[:n])
+			_, err = le.Conn.Write(b[:n])
 			if err != nil {
 				log.Printf("1 <- n: %v (%v)", n, err)
 				return
 			}
-			if !le.Ci.IsConnected {
+			if !le.IsConnected {
 				return
 			}
 		}
@@ -424,14 +427,8 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 
 	go func() {
 		b := make([]byte, 1024)
-		/*
-			n, err := io.Copy(npty, le.ci.Conn)
-			if err != nil {
-				log.Printf("2 n: %v (%v)", n, err)
-			}
-		*/
 		for {
-			n, err := le.Ci.Conn.Read(b)
+			n, err := le.Conn.Read(b)
 			if err != nil {
 				log.Printf("2 -> n: %v (%v)", n, err)
 				return
@@ -439,8 +436,6 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			_, err = npty.Write(b[:n])
 			if err != nil {
 				log.Printf("2 <- n: %v (%v) %q", n, err, b[:n])
-				//le.ci.Conn.Write(b[:n])
-				//le.Input(string(b[:n]))
 				le.mutex.Lock()
 				ok, err := le.RunTrigger(string(b[:n]))
 				le.mutex.Unlock()
@@ -454,7 +449,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 
 				return
 			}
-			if !le.Ci.IsConnected {
+			if !le.IsConnected {
 				return
 			}
 		}
@@ -482,7 +477,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			SetWinsize(npty.Fd(), w, h)
 			sizeAux = fmt.Sprintf("%d;%d", w, h)
 
-			if !le.Ci.IsConnected {
+			if !le.IsConnected {
 				return
 			}
 		}
