@@ -7,11 +7,20 @@ if (getEnv("LANG") == "") then
     -- Term.setOutputMode("UTF-8") -- default
 end
 
-Term.cls()
-menu()
-
-printf = function(s, ...)
+Printf = function(s, ...)
     return io.write(s:format(...))
+end
+
+local function menu()
+    Term.write("[1] toggle echo on/off\r\n")
+    Term.write("[2] print test string\r\n")
+    Term.write("[3] quit\r\n")
+    Term.write("[4] zsh\r\n")
+    Term.write("[5] Show Term parameters\r\n")
+    Term.write("[6] Show Squiddy\r\n")
+    Term.write("[7] Show Users\r\n")
+    Term.write("choose an option\r\n")
+
 end
 
 -- Term.setOutputDelay(1) -- 1ms delay between each character
@@ -84,18 +93,6 @@ function Clock()
     Term.write("\027[?25h") -- show cursor
     Term.write("\027[u") -- restore cursor position ANSI.SYS
     -- Term.setOutputDelay(1)
-end
-
-function menu()
-    Term.write("[1] toggle echo on/off\r\n")
-    Term.write("[2] print test string\r\n")
-    Term.write("[3] quit\r\n")
-    Term.write("[4] zsh\r\n")
-    Term.write("[5] Show Term parameters\r\n")
-    Term.write("[6] Show Squiddy\r\n")
-    Term.write("[7] Show Users\r\n")
-    Term.write("choose an option\r\n")
-
 end
 
 function ShowTerm()
