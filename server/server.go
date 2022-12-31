@@ -253,9 +253,10 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 	}
 	le := luaengine.New(s.cfg)
 	le.Users = &s.Users
-	ci := client.NewInstance(conn, serverConn, term)
+	ci := client.NewInstance(conn, serverConn)
 	ci.User = s.Users[serverConn.User()]
 	le.Ci = ci
+	le.Term = &term
 
 	if s.proto == nil {
 		log.Printf("compiling init BBS code\n")
@@ -343,7 +344,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				log.Println("pty-req request")
 				termLen := req.Payload[3]
 				s.mux.Lock()
-				ci.Term.W, ci.Term.H = parseDims(req.Payload[termLen+4:])
+				term.W, term.H = parseDims(req.Payload[termLen+4:])
 				s.mux.Unlock()
 				err := req.Reply(true, nil)
 				if err != nil {
@@ -353,7 +354,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			case "window-change":
 				log.Println("window-change request")
 				s.mux.Lock()
-				ci.Term.W, ci.Term.H = parseDims(req.Payload)
+				term.W, term.H = parseDims(req.Payload)
 				s.mux.Unlock()
 			case "env":
 				err := req.Reply(true, nil)

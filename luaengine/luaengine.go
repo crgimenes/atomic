@@ -17,6 +17,7 @@ import (
 	"crg.eti.br/go/atomic/client"
 	"crg.eti.br/go/atomic/config"
 	"crg.eti.br/go/atomic/database"
+	"crg.eti.br/go/atomic/term"
 	"github.com/creack/pty"
 	lua "github.com/yuin/gopher-lua"
 	parse "github.com/yuin/gopher-lua/parse"
@@ -31,6 +32,7 @@ type LuaExtender struct {
 	Proto        *lua.FunctionProto
 	ExternalExec bool
 	Users        *map[string]*database.User
+	Term         *term.Term
 }
 
 // New creates a new instance of LuaExtender.
@@ -69,7 +71,7 @@ func New(cfg config.Config) *LuaExtender {
 }
 
 func (le *LuaExtender) setMaxInputLength(l *lua.LState) int {
-	le.Ci.Term.MaxInputLength = int(l.ToNumber(1))
+	le.Term.MaxInputLength = int(l.ToNumber(1))
 	return 0
 }
 
@@ -111,25 +113,25 @@ func (le *LuaExtender) logf(l *lua.LState) int {
 
 func (le *LuaExtender) setOutputDelay(l *lua.LState) int {
 	i := l.ToInt(1)
-	le.Ci.Term.SetOutputDelay(i)
+	le.Term.SetOutputDelay(i)
 	return 0
 }
 
 func (le *LuaExtender) getOutputMode(l *lua.LState) int {
-	res := lua.LString(le.Ci.Term.GetOutputDisplay())
+	res := lua.LString(le.Term.GetOutputDisplay())
 	l.Push(res)
 	return 1
 }
 
 func (le *LuaExtender) setOutputMode(l *lua.LState) int {
 	s := l.ToString(1)
-	le.Ci.Term.SetOutputMode(s)
+	le.Term.SetOutputMode(s)
 	return 0
 }
 
 func (le *LuaExtender) limitInputLength(l *lua.LState) int {
 	i := l.ToInt(1)
-	le.Ci.Term.SetInputLimit(i)
+	le.Term.SetInputLimit(i)
 	return 0
 }
 
@@ -138,7 +140,7 @@ func (le *LuaExtender) Close() error {
 }
 
 func (le *LuaExtender) Input(s string) {
-	le.Ci.Term.Input(s)
+	le.Term.Input(s)
 }
 
 // GetState returns the state of the moon interpreter.
@@ -147,7 +149,7 @@ func (le *LuaExtender) GetState() *lua.LState {
 }
 
 func (le *LuaExtender) cls(l *lua.LState) int {
-	err := le.Ci.Term.Clear()
+	err := le.Term.Clear()
 	if err != nil {
 		log.Println(err)
 	}
@@ -156,7 +158,7 @@ func (le *LuaExtender) cls(l *lua.LState) int {
 
 func (le *LuaExtender) writeFromASCII(l *lua.LState) int {
 	s := l.ToString(1)
-	le.Ci.Term.WriteFromASCII(s)
+	le.Term.WriteFromASCII(s)
 
 	return 0
 }
@@ -176,16 +178,16 @@ func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
 
 	encoded := base64.StdEncoding.EncodeToString(content)
 
-	le.Ci.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
-	le.Ci.Term.WriteString(encoded)
-	le.Ci.Term.WriteString("\a")
+	le.Term.WriteString("\033]1337;File=inline=1;preserveAspectRatio=1:")
+	le.Term.WriteString(encoded)
+	le.Term.WriteString("\a")
 
 	return 0
 }
 
 func (le *LuaExtender) write(l *lua.LState) int {
 	s := l.ToString(1)
-	le.Ci.Term.WriteString(s)
+	le.Term.WriteString(s)
 
 	return 0
 }
@@ -224,18 +226,18 @@ func (le *LuaExtender) InitState() error {
 
 func (le *LuaExtender) setInputLimit(l *lua.LState) int {
 	i := l.ToInt(1)
-	le.Ci.Term.SetInputLimit(i)
+	le.Term.SetInputLimit(i)
 	return 0
 }
 
 func (le *LuaExtender) getField(l *lua.LState) int {
-	res := lua.LString(le.Ci.Term.GetField())
+	res := lua.LString(le.Term.GetField())
 	l.Push(res)
 	return 1
 }
 
 func (le *LuaExtender) getPassword(l *lua.LState) int {
-	res := lua.LString(le.Ci.Term.GetField())
+	res := lua.LString(le.Term.GetField())
 	l.Push(res)
 	return 1
 }
@@ -265,7 +267,7 @@ func (le *LuaExtender) RunTrigger(name string) (bool, error) {
 
 func (le *LuaExtender) setEcho(l *lua.LState) int {
 	b := l.ToBool(1)
-	le.Ci.Term.SetEcho(b)
+	le.Term.SetEcho(b)
 	return 0
 }
 
@@ -375,7 +377,7 @@ func (le *LuaExtender) fileExists(l *lua.LState) int {
 func (le *LuaExtender) exec(l *lua.LState) int {
 	execFile := l.ToString(1)
 	le.ExternalExec = true
-	le.Ci.Term.Cls()
+	le.Term.Cls()
 	npty, ntty, err := pty.Open()
 	if err != nil {
 		log.Printf("Could not start pty (%s)", err)
@@ -471,8 +473,8 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			}
 			le.mutex.Unlock()
 			time.Sleep(100 * time.Millisecond)
-			w = le.Ci.Term.W
-			h = le.Ci.Term.H
+			w = le.Term.W
+			h = le.Term.H
 			if sizeAux == fmt.Sprintf("%d;%d", w, h) {
 				continue
 			}
