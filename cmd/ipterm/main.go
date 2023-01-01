@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/exec"
-	"os/signal"
 	"strings"
 	"syscall"
 
+	t "crg.eti.br/go/atomic/term"
 	"github.com/kr/pty"
 	"golang.org/x/term"
 )
@@ -75,16 +74,7 @@ func runCmd() error {
 	defer func() { _ = ptmx.Close() }() // Best effort.
 
 	// Handle pty size.
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGWINCH)
-	go func() {
-		for range ch {
-			if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
-				log.Printf("error resizing pty: %s\r\n", err)
-			}
-		}
-	}()
-	ch <- syscall.SIGWINCH // Initial resize.
+	t.HandleResize(ptmx) // Initial resize.
 
 	// Set stdin in raw mode.
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
