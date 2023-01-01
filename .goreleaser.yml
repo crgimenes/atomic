@@ -4,7 +4,7 @@ before:
     - go generate ./...
 builds:
   - id: ipterm
-    main: ./util/ipterm/main.go
+    main: ./cmd/ipterm/main.go
     ldflags: -s -w
     binary: ipterm
     env:
@@ -22,7 +22,7 @@ builds:
       - 6
       - 7
   - id: iptclient
-    main: ./util/iptclient/main.go
+    main: ./cmd/iptclient/main.go
     ldflags: -s -w
     binary: iptclient
     env:
@@ -40,7 +40,7 @@ builds:
       - 6
       - 7
   - id: atomicdb
-    main: ./util/atomicdb/main.go
+    main: ./cmd/atomicdb/main.go
     ldflags: -s -w
     binary: atomicdb
     env:
@@ -58,7 +58,7 @@ builds:
       - 6
       - 7
   - id: atomic
-    main: ./main.go
+    main: ./cmd/atomic/main.go
     ldflags: -s -w
     binary: atomic
     env:
