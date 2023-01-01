@@ -8,9 +8,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
-	"unsafe"
 
 	"crg.eti.br/go/atomic/config"
 	"crg.eti.br/go/atomic/database"
@@ -299,10 +297,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	cmd.Stdout = ntty
 	cmd.Stdin = ntty
 	cmd.Stderr = ntty
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setctty: true,
-		Setsid:  true, // TODO: Evaluate me?
-	}
+	setCtrlTerm(cmd)
 
 	if err := cmd.Start(); err != nil {
 		log.Printf("Failed to start %v (%s)", execFile, err)
@@ -400,9 +395,4 @@ type Winsize struct {
 	Width  uint16
 	x      uint16 // unused
 	y      uint16 // unused
-}
-
-func SetWinsize(fd uintptr, w, h int) {
-	ws := &Winsize{Width: uint16(w), Height: uint16(h)}
-	syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCSWINSZ), uintptr(unsafe.Pointer(ws)))
 }
