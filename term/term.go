@@ -498,8 +498,8 @@ func (t *Term) ExitScreen() int {
 	return 0
 }
 
-func (t *Term) MoveCursor(x, y int) int {
-	t.WriteString(fmt.Sprintf("\033[%d;%dH", y, x))
+func (t *Term) MoveCursor(col, lin int) int {
+	t.WriteString(fmt.Sprintf("\033[%d;%dH", lin, col))
 	return 0
 }
 

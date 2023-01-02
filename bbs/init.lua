@@ -32,8 +32,9 @@ function Menu()
     Term.print(8, 11, "7 Show Users")
     Term.drawBox(6, 4, 25, 9)
 
+    -- Term.write("choose an option\r\n")
+    Term.print(8, 13, "option: ")
 
-    Term.write("choose an option\r\n")
 
     local w, h = Term.getSize()
     Term.drawBox(3, 3, w - 3, h - 3)
@@ -164,12 +165,13 @@ Term.write("\r\n")
 ShowUsers()
 
 while true do
-    Term.write("\nenter a string:")
+    -- Term.write("\nenter a string:")
+    Term.print(25, 25, "enter a string: ")
     Str = Term.getField()
-    Term.write("\r\n")
+    Term.moveCursor(29, 26)
     Term.write("[")
     Term.write(Str)
     Term.write("]")
-    Term.write("\r\n")
+    Term.print(25, 27, Str)
 end
 -- quit()

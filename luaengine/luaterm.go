@@ -127,6 +127,14 @@ func (le *LuaExtender) print(l *lua.LState) int {
 	return 0
 }
 
+// MoveCursor
+func (le *LuaExtender) moveCursor(l *lua.LState) int {
+	col := l.ToInt(1)
+	lin := l.ToInt(2)
+	le.Term.MoveCursor(lin, col)
+	return 0
+}
+
 func (le *LuaExtender) termLoader(L *lua.LState) int {
 	var termAPI = map[string]lua.LGFunction{
 		"cls":                  le.cls,
@@ -136,6 +144,7 @@ func (le *LuaExtender) termLoader(L *lua.LState) int {
 		"getPassword":          le.getPassword,
 		"getOutputMode":        le.getOutputMode,
 		"getSize":              le.getSize,
+		"moveCursor":           le.moveCursor,
 		"print":                le.print,
 		"setMaxInputLength":    le.setMaxInputLength,
 		"setEcho":              le.setEcho,
