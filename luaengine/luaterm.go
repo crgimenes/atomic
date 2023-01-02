@@ -119,6 +119,14 @@ func (le *LuaExtender) getSize(l *lua.LState) int {
 	return 2
 }
 
+func (le *LuaExtender) print(l *lua.LState) int {
+	col := l.ToInt(1)
+	lin := l.ToInt(2)
+	s := l.ToString(3)
+	le.Term.Print(lin, col, s)
+	return 0
+}
+
 func (le *LuaExtender) termLoader(L *lua.LState) int {
 	var termAPI = map[string]lua.LGFunction{
 		"cls":                  le.cls,
@@ -128,6 +136,7 @@ func (le *LuaExtender) termLoader(L *lua.LState) int {
 		"getPassword":          le.getPassword,
 		"getOutputMode":        le.getOutputMode,
 		"getSize":              le.getSize,
+		"print":                le.print,
 		"setMaxInputLength":    le.setMaxInputLength,
 		"setEcho":              le.setEcho,
 		"setInputLimit":        le.setInputLimit,
