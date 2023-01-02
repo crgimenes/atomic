@@ -346,7 +346,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 				log.Println("pty-req request")
 				termLen := req.Payload[3]
 				s.mux.Lock()
-				term.W, term.H = parseDims(req.Payload[termLen+4:])
+				term.Width, term.Height = parseDims(req.Payload[termLen+4:])
 				s.mux.Unlock()
 				err := req.Reply(true, nil)
 				if err != nil {
@@ -356,7 +356,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 			case "window-change":
 				log.Println("window-change request")
 				s.mux.Lock()
-				term.W, term.H = parseDims(req.Payload)
+				term.Width, term.Height = parseDims(req.Payload)
 				s.mux.Unlock()
 			case "env":
 				err := req.Reply(true, nil)

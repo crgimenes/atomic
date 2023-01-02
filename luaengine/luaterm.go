@@ -101,13 +101,33 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 	return 1
 }
 
+func (le *LuaExtender) drawBox(l *lua.LState) int {
+	x := l.ToInt(1)
+	y := l.ToInt(2)
+	w := l.ToInt(3)
+	h := l.ToInt(4)
+	le.Term.DrawBox(x, y, w, h)
+	return 0
+}
+
+func (le *LuaExtender) getSize(l *lua.LState) int {
+	w, h := le.Term.GetSize()
+	res := lua.LNumber(w)
+	l.Push(res)
+	res = lua.LNumber(h)
+	l.Push(res)
+	return 2
+}
+
 func (le *LuaExtender) termLoader(L *lua.LState) int {
 	var termAPI = map[string]lua.LGFunction{
 		"cls":                  le.cls,
+		"drawBox":              le.drawBox,
 		"inlineImagesProtocol": le.inlineImagesProtocol,
 		"getField":             le.getField,
 		"getPassword":          le.getPassword,
 		"getOutputMode":        le.getOutputMode,
+		"getSize":              le.getSize,
 		"setMaxInputLength":    le.setMaxInputLength,
 		"setEcho":              le.setEcho,
 		"setInputLimit":        le.setInputLimit,

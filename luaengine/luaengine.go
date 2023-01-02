@@ -366,8 +366,8 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			}
 			le.mutex.Unlock()
 			time.Sleep(100 * time.Millisecond)
-			w = le.Term.W
-			h = le.Term.H
+			w = le.Term.Width
+			h = le.Term.Height
 			if sizeAux == fmt.Sprintf("%d;%d", w, h) {
 				continue
 			}

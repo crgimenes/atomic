@@ -32,6 +32,11 @@ function Menu()
     Term.write("[7] Show Users\r\n")
     Term.write("choose an option\r\n")
 
+
+    local w, h = Term.getSize()
+    Term.drawBox(3, 3, w - 3, h - 3)
+
+
 end
 
 -- Term.setOutputDelay(1) -- 1ms delay between each character

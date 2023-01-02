@@ -21,8 +21,8 @@ const (
 )
 
 type Term struct {
-	W              int
-	H              int
+	Width          int
+	Height         int
 	bufferPosition int
 	MaxInputLength int
 	C              io.Writer
@@ -185,7 +185,7 @@ func (t *Term) SetEcho(b bool) {
 }
 
 func (t *Term) Print(lin, col int, s string) error {
-	c := t.W + 1 - col
+	c := t.Width + 1 - col
 	l := len([]rune(s))
 
 	if c > l {
@@ -531,4 +531,30 @@ func (t *Term) SetInputLimit(limit int) {
 
 func (t *Term) SetOutputDelay(delay int) {
 	t.OutputDelay = time.Duration(delay) * time.Millisecond
+}
+
+func (t *Term) DrawBox(x, y, w, h int) {
+	t.MoveCursor(x, y)
+	t.WriteString("┌")
+	for i := 0; i < w-2; i++ {
+		t.WriteString("─")
+	}
+	t.WriteString("┐")
+	for i := 0; i < h-2; i++ {
+		t.MoveCursor(x, y+i+1)
+		t.WriteString("│")
+		t.MoveCursor(x+w-1, y+i+1)
+		t.WriteString("│")
+	}
+	t.MoveCursor(x, y+h-1)
+	t.WriteString("└")
+	for i := 0; i < w-2; i++ {
+		t.WriteString("─")
+	}
+	t.WriteString("┘")
+}
+
+// GetSize
+func (t *Term) GetSize() (int, int) {
+	return t.Width, t.Height
 }
