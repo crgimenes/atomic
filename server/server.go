@@ -35,11 +35,11 @@ func New(cfg config.Config) *SSHServer {
 
 func (s *SSHServer) authLogCallback(c ssh.ConnMetadata, method string, err error) {
 	if err != nil {
-		log.Printf("Failed authentication for %q from %v, method %v, error: %v", c.User(), c.RemoteAddr(), method, err)
+		log.Printf("failed authentication for %q from %v, method %v, error: %v", c.User(), c.RemoteAddr(), method, err)
 		return
 	}
 	log.Println("auth log callback", s.Users[c.User()].Nickname)
-	log.Printf("Successful authentication for %q from %v, method %v", c.User(), c.RemoteAddr(), method)
+	log.Printf("successful authentication for %q from %v, method %v", c.User(), c.RemoteAddr(), method)
 }
 
 func (s *SSHServer) passwordCallback(c ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
@@ -84,7 +84,7 @@ func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, 
 }
 
 func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-	log.Printf("Public key for %q, %q, %q, %s",
+	log.Printf("public key for %q, %q, %q, %s",
 		c.User(),
 		c.RemoteAddr(),
 		key.Type(),

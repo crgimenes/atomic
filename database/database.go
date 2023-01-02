@@ -77,7 +77,7 @@ func (d *Database) RunMigration() error {
 		return err
 	}
 
-	log.Printf("Last migration: %d", lastMigration)
+	log.Printf("last migration: %d", lastMigration)
 
 	// begin transaction
 	tx, err := d.db.Beginx()
@@ -143,7 +143,7 @@ func (d *Database) VerifyMigration() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Printf("Migrations: %d", count)
+	log.Printf("migrations: %d", count)
 	if count != 0 {
 		err = d.db.Get(&lastMigration, "SELECT MAX(id) as max FROM migrations")
 		if err != nil {

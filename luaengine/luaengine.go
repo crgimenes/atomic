@@ -290,7 +290,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	le.Term.Cls()
 	npty, ntty, err := pty.Open()
 	if err != nil {
-		log.Printf("Could not start pty (%s)", err)
+		log.Printf("could not start pty (%s)", err)
 	}
 
 	cmd := exec.Command(execFile)
@@ -300,7 +300,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	setCtrlTerm(cmd)
 
 	if err := cmd.Start(); err != nil {
-		log.Printf("Failed to start %v (%s)", execFile, err)
+		log.Printf("failed to start %v (%s)", execFile, err)
 		return 0
 	}
 

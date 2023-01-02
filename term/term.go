@@ -521,7 +521,7 @@ func (t *Term) SetOutputMode(mode string) {
 		t.OutputMode = CP850
 	default:
 		t.OutputMode = UTF8
-		log.Printf("Invalid output mode: %s. Using UTF-8", mode)
+		log.Printf("invalid output mode: %s. Using UTF-8", mode)
 	}
 }
 
