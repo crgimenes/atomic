@@ -102,11 +102,11 @@ func (le *LuaExtender) getPassword(l *lua.LState) int {
 }
 
 func (le *LuaExtender) drawBox(l *lua.LState) int {
-	x := l.ToInt(1)
-	y := l.ToInt(2)
-	w := l.ToInt(3)
-	h := l.ToInt(4)
-	le.Term.DrawBox(x, y, w, h)
+	row := l.ToInt(1)
+	col := l.ToInt(2)
+	width := l.ToInt(3)
+	height := l.ToInt(4)
+	le.Term.DrawBox(row, col, width, height)
 	return 0
 }
 
@@ -120,18 +120,17 @@ func (le *LuaExtender) getSize(l *lua.LState) int {
 }
 
 func (le *LuaExtender) print(l *lua.LState) int {
-	col := l.ToInt(1)
-	lin := l.ToInt(2)
+	row := l.ToInt(1)
+	col := l.ToInt(2)
 	s := l.ToString(3)
-	le.Term.Print(lin, col, s)
+	le.Term.Print(row, col, s)
 	return 0
 }
 
-// MoveCursor
 func (le *LuaExtender) moveCursor(l *lua.LState) int {
-	col := l.ToInt(1)
-	lin := l.ToInt(2)
-	le.Term.MoveCursor(lin, col)
+	row := l.ToInt(1)
+	col := l.ToInt(2)
+	le.Term.MoveCursor(row, col)
 	return 0
 }
 

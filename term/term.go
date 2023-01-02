@@ -184,7 +184,7 @@ func (t *Term) SetEcho(b bool) {
 	t.echo = b
 }
 
-func (t *Term) Print(lin, col int, s string) error {
+func (t *Term) Print(row, col int, s string) error {
 	c := t.Width + 1 - col
 	l := len([]rune(s))
 
@@ -201,7 +201,7 @@ func (t *Term) Print(lin, col int, s string) error {
 
 	a := [][]byte{
 		[]byte("\033["),
-		[]byte(strconv.Itoa(lin)),
+		[]byte(strconv.Itoa(row)),
 		{';'},
 		[]byte(strconv.Itoa(col)),
 		{'f'},
@@ -498,8 +498,8 @@ func (t *Term) ExitScreen() int {
 	return 0
 }
 
-func (t *Term) MoveCursor(col, lin int) int {
-	t.WriteString(fmt.Sprintf("\033[%d;%dH", lin, col))
+func (t *Term) MoveCursor(row, col int) int {
+	t.WriteString(fmt.Sprintf("\033[%d;%dH", row, col))
 	return 0
 }
 
@@ -533,24 +533,27 @@ func (t *Term) SetOutputDelay(delay int) {
 	t.OutputDelay = time.Duration(delay) * time.Millisecond
 }
 
-func (t *Term) DrawBox(x, y, w, h int) {
-	t.MoveCursor(x, y)
+func (t *Term) DrawBox(row, col, width, height int) {
+	t.MoveCursor(row, col)
 	t.WriteString("┌")
-	for i := 0; i < w-2; i++ {
+	for i := 0; i < width-2; i++ {
 		t.WriteString("─")
 	}
 	t.WriteString("┐")
-	for i := 0; i < h-2; i++ {
-		t.MoveCursor(x, y+i+1)
+
+	for i := 0; i < height-2; i++ {
+		t.MoveCursor(row+i+1, col)
 		t.WriteString("│")
-		t.MoveCursor(x+w-1, y+i+1)
+		t.MoveCursor(row+i+1, col+width-1)
 		t.WriteString("│")
 	}
-	t.MoveCursor(x, y+h-1)
+
+	t.MoveCursor(row+height-1, col)
 	t.WriteString("└")
-	for i := 0; i < w-2; i++ {
+	for i := 0; i < width-2; i++ {
 		t.WriteString("─")
 	}
+
 	t.WriteString("┘")
 }
 
