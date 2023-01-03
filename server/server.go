@@ -26,6 +26,10 @@ type SSHServer struct {
 	Users map[string]*database.User
 }
 
+const (
+	MaxAuthTries = 5
+)
+
 func New(cfg config.Config) *SSHServer {
 	return &SSHServer{
 		cfg:   cfg,
@@ -180,7 +184,7 @@ func (s *SSHServer) newServerConfig() (*ssh.ServerConfig, error) {
 		KeyboardInteractiveCallback: s.keyboardInteractiveCallback,
 		BannerCallback:              s.bannerCallback,
 		ServerVersion:               "SSH-2.0-ATOMIC",
-		MaxAuthTries:                3,
+		MaxAuthTries:                MaxAuthTries,
 	}
 	scfg.AddHostKey(pk)
 
