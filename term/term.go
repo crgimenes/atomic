@@ -534,34 +534,36 @@ func (t *Term) SetOutputDelay(delay int) {
 }
 
 func (t *Term) DrawBox(row, col, width, height int) {
-	var border = []rune{'┌', '─', '┐', '│', '└', '┘'}
-	t.MoveCursor(row, col)
-	t.WriteString(string(border[0]))
-	for i := 0; i < width-2; i++ {
-		t.WriteString(string(border[1]))
-	}
-	t.WriteString(string(border[2]))
-
 	var (
 		lrow    int
-		lborder = string(border[3])
+		border  = []rune{'┌', '─', '┐', '│', '└', '┘'}
+		lborder = border[1]
 	)
 
+	t.MoveCursor(row, col)
+	t.WriteRune(border[0])
+
+	for i := 0; i < width-2; i++ {
+		t.WriteRune(border[1])
+	}
+	t.WriteRune(border[2])
+	lborder = border[3]
 	for i := 0; i < height-2; i++ {
 		lrow = row + i + 1
 		t.MoveCursor(lrow, col)
-		t.WriteString(lborder)
+		t.WriteRune(lborder)
 		t.MoveCursor(lrow, col+width-1)
-		t.WriteString(lborder)
+		t.WriteRune(lborder)
 	}
 
 	t.MoveCursor(row+height-1, col)
-	t.WriteString(string(border[4]))
+	t.WriteRune(border[4])
+	lborder = border[1]
 	for i := 0; i < width-2; i++ {
-		t.WriteString(string(border[1]))
+		t.WriteRune(lborder)
 	}
 
-	t.WriteString(string(border[5]))
+	t.WriteRune(border[5])
 }
 
 // GetSize
