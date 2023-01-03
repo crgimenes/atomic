@@ -570,3 +570,95 @@ func (t *Term) DrawBox(row, col, width, height int) {
 func (t *Term) GetSize() (int, int) {
 	return t.Width, t.Height
 }
+
+func (t *Term) SetColor(color string) {
+	color = strings.ToUpper(color)
+	switch color {
+	case "BLACK":
+		io.WriteString(t.C, "\033[30m")
+	case "RED":
+		io.WriteString(t.C, "\033[31m")
+	case "GREEN":
+		io.WriteString(t.C, "\033[32m")
+	case "YELLOW":
+		io.WriteString(t.C, "\033[33m")
+	case "BLUE":
+		io.WriteString(t.C, "\033[34m")
+	case "MAGENTA":
+		io.WriteString(t.C, "\033[35m")
+	case "CYAN":
+		io.WriteString(t.C, "\033[36m")
+	case "WHITE":
+		io.WriteString(t.C, "\033[37m")
+	case "RESET":
+		io.WriteString(t.C, "\033[0m")
+	default:
+		log.Printf("invalid color: %s", color)
+	}
+}
+
+func (t *Term) SetBackgroundColor(color string) {
+	color = strings.ToUpper(color)
+	switch color {
+	case "BLACK":
+		io.WriteString(t.C, "\033[40m")
+	case "RED":
+		io.WriteString(t.C, "\033[41m")
+	case "GREEN":
+		io.WriteString(t.C, "\033[42m")
+	case "YELLOW":
+		io.WriteString(t.C, "\033[43m")
+	case "BLUE":
+		io.WriteString(t.C, "\033[44m")
+	case "MAGENTA":
+		io.WriteString(t.C, "\033[45m")
+	case "CYAN":
+		io.WriteString(t.C, "\033[46m")
+	case "WHITE":
+		io.WriteString(t.C, "\033[47m")
+	case "RESET":
+		io.WriteString(t.C, "\033[0m")
+	default:
+		log.Printf("invalid color: %s", color)
+	}
+}
+
+func (t *Term) SetColorRGB(r, g, b int) {
+	io.WriteString(t.C, fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b))
+}
+
+func (t *Term) SetBackgroundColorRGB(r, g, b int) {
+	io.WriteString(t.C, fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b))
+}
+
+func (t *Term) SetBold() {
+	io.WriteString(t.C, "\033[1m")
+}
+
+func (t *Term) SetUnderline() {
+	io.WriteString(t.C, "\033[4m")
+}
+
+func (t *Term) SetBlink() {
+	io.WriteString(t.C, "\033[5m")
+}
+
+func (t *Term) SetReverse() {
+	io.WriteString(t.C, "\033[7m")
+}
+
+func (t *Term) SetInvisible() {
+	io.WriteString(t.C, "\033[8m")
+}
+
+func (t *Term) Reset() {
+	io.WriteString(t.C, "\033[0m")
+}
+
+func (t *Term) SetCursorVisible(visible bool) {
+	if visible {
+		io.WriteString(t.C, "\033[?25h")
+		return
+	}
+	io.WriteString(t.C, "\033[?25l")
+}
