@@ -12,6 +12,8 @@ Printf = function(s, ...)
 end
 
 function Menu()
+    Term.setColor("WHITE")
+    Term.setBackgroundColor("BLACK")
     clearTriggers()
     timer("clock", 1100, Clock)
     trigger("1", Main_menu)
@@ -33,12 +35,13 @@ function Menu()
     Term.drawBox(4, 7, 25, 9)
 
     -- Term.write("choose an option\r\n")
-    Term.print(8, 13, "option: ")
-
+    Term.setColor("MAGENTA")
+    Term.print(15, 8, "option: ")
+    Term.setColor("BLUE")
 
     local w, h = Term.getSize()
     Term.drawBox(3, 3, w - 3, h - 3)
-
+    Term.setColor("WHITE")
 
 end
 
