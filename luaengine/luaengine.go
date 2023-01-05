@@ -2,6 +2,7 @@ package luaengine
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -62,6 +63,8 @@ func New(cfg config.Config,
 	le.luaState = lua.NewState()
 	le.luaState.SetGlobal("clearTriggers", le.luaState.NewFunction(le.ClearTriggers))
 	le.luaState.SetGlobal("exec", le.luaState.NewFunction(le.exec))
+	le.luaState.SetGlobal("execWithTriggers", le.luaState.NewFunction(le.execWithTriggers))
+	le.luaState.SetGlobal("execNonInteractive", le.luaState.NewFunction(le.execNonInteractive))
 	le.luaState.SetGlobal("fileExists", le.luaState.NewFunction(le.fileExists))
 	le.luaState.SetGlobal("getEnv", le.luaState.NewFunction(le.getEnv))
 	le.luaState.SetGlobal("logf", le.luaState.NewFunction(le.logf))
@@ -385,6 +388,101 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 	le.ExternalExec = false
 	le.mutex.Unlock()
 
+	return 0
+}
+
+func (le *LuaExtender) execWithTriggers(l *lua.LState) int {
+	execFile := l.ToString(1)
+	npty, ntty, err := pty.Open()
+	if err != nil {
+		log.Printf("could not start pty (%s)", err)
+	}
+
+	cmd := exec.Command(execFile)
+	cmd.Stdout = ntty
+	cmd.Stdin = ntty
+	cmd.Stderr = ntty
+	setCtrlTerm(cmd)
+
+	if err := cmd.Start(); err != nil {
+		log.Printf("failed to start %v (%s)", execFile, err)
+		return 0
+	}
+
+	go func() {
+		for {
+			b := make([]byte, 8)
+			n, err := npty.Read(b)
+			if err != nil {
+				log.Printf("1 -> n: %v (%v)", n, err)
+				return
+			}
+
+			le.Term.WriteString(string(b[:n]))
+			//_, err = le.Conn.Write(b[:n])
+			//if err != nil {
+			//	log.Printf("1 <- n: %v (%v)", n, err)
+			//	return
+			//}
+			if !le.IsConnected {
+				return
+			}
+		}
+	}()
+
+	go func() {
+		b := make([]byte, 1024)
+		for {
+			n, err := le.Conn.Read(b)
+			if err != nil {
+				log.Printf("2 -> n: %v (%v)", n, err)
+				return
+			}
+
+			k := string(b[:n])
+			ok, err := le.RunTrigger(k)
+			if err != nil {
+				log.Println("error RunTrigger", err.Error())
+				break
+			}
+			if !ok {
+				le.Input(k)
+			}
+
+			if !le.IsConnected {
+				return
+			}
+		}
+	}()
+
+	cmd.Wait()
+	le.ExternalExec = false
+
+	return 0
+}
+
+func (le *LuaExtender) execNonInteractive(l *lua.LState) int {
+	var outb, errb bytes.Buffer
+	execFile := l.ToString(1)
+
+	cmd := exec.Command(execFile)
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	//cmd.Stdin =
+
+	if err := cmd.Start(); err != nil {
+		log.Printf("failed to start %v (%s)", execFile, err)
+		return 0
+	}
+
+	cmd.Wait()
+
+	le.Term.WriteString(outb.String())
+	if errb.String() != "" {
+		log.Printf("exec %v: %v", execFile, errb.String())
+	}
+
+	le.ExternalExec = false
 	return 0
 }
 

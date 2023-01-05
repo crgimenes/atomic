@@ -55,7 +55,7 @@ function ExitConnection()
 end
 
 function Runiptclient()
-    exec("iptclient")
+    execWithTriggers("iptclient")
     MainMenu()
 end
 

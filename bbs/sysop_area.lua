@@ -1,5 +1,5 @@
 local function run_ipt_client()
-    exec("iptclient")
+    execWithTriggers("iptclient")
 end
 
 local function back()
@@ -20,7 +20,7 @@ end
 
 function run_test()
     SysopMenu()
-    exec("ls")
+    execNonInteractive("ls")
 end
 
 function SysopArea()
