@@ -54,8 +54,9 @@ function ExitConnection()
     quit()
 end
 
-local function Runiptclient()
+function Runiptclient()
     exec("iptclient")
+    MainMenu()
 end
 
 MainMenu()
