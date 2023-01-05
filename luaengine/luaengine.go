@@ -287,7 +287,6 @@ func (le *LuaExtender) fileExists(l *lua.LState) int {
 func (le *LuaExtender) exec(l *lua.LState) int {
 	execFile := l.ToString(1)
 	le.ExternalExec = true
-	le.Term.Cls()
 	npty, ntty, err := pty.Open()
 	if err != nil {
 		log.Printf("could not start pty (%s)", err)
@@ -312,11 +311,13 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 				log.Printf("1 -> n: %v (%v)", n, err)
 				return
 			}
-			_, err = le.Conn.Write(b[:n])
-			if err != nil {
-				log.Printf("1 <- n: %v (%v)", n, err)
-				return
-			}
+
+			le.Term.WriteString(string(b[:n]))
+			//_, err = le.Conn.Write(b[:n])
+			//if err != nil {
+			//	log.Printf("1 <- n: %v (%v)", n, err)
+			//	return
+			//}
 			if !le.IsConnected {
 				return
 			}
@@ -334,9 +335,7 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 			_, err = npty.Write(b[:n])
 			if err != nil {
 				log.Printf("2 <- n: %v (%v) %q", n, err, b[:n])
-				le.mutex.Lock()
 				ok, err := le.RunTrigger(string(b[:n]))
-				le.mutex.Unlock()
 				if err != nil {
 					log.Println("error RunTrigger", err.Error())
 					return
