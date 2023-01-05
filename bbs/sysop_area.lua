@@ -3,10 +3,10 @@ local function run_ipt_client()
 end
 
 local function back()
-    Menu()
+    MainMenu()
 end
 
-function Main_menu()
+function SysopMenu()
     clearTriggers()
     Term.cls()
     Term.write("\r\nmain menu\r\n")
@@ -17,4 +17,13 @@ function Main_menu()
     trigger("1", run_ipt_client)
     trigger("0", back)
 
+end
+
+function SysopArea()
+    if hasGroup("sysop") then
+        SysopMenu()
+        return
+    end
+    MainMenu()
+    Term.write("\r\nyou are not a sysop\r\n")
 end
