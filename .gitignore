@@ -24,3 +24,4 @@ db
 authorized_keys
 atomic.db
 notes.md
+sandbox.lua
