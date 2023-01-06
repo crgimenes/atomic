@@ -41,6 +41,14 @@ type KeyValue struct {
 	Value string
 }
 
+// Winsize stores the Height and Width of a terminal.
+type Winsize struct {
+	Height uint16
+	Width  uint16
+	x      uint16 // unused
+	y      uint16 // unused
+}
+
 // New creates a new instance of LuaExtender.
 func New(cfg config.Config,
 	users *map[string]*database.User,
@@ -288,21 +296,27 @@ func (le *LuaExtender) fileExists(l *lua.LState) int {
 }
 
 func (le *LuaExtender) exec(l *lua.LState) int {
-	execFile := l.ToString(1)
+	name := l.ToString(1)
+	args := make([]string, l.GetTop()-1)
+	for i := 2; i <= l.GetTop(); i++ {
+		args[i-2] = l.ToString(i)
+	}
+
 	le.ExternalExec = true
 	npty, ntty, err := pty.Open()
 	if err != nil {
 		log.Printf("could not start pty (%s)", err)
 	}
 
-	cmd := exec.Command(execFile)
+	cmd := exec.Command(name, args...)
 	cmd.Stdout = ntty
 	cmd.Stdin = ntty
 	cmd.Stderr = ntty
 	setCtrlTerm(cmd)
 
 	if err := cmd.Start(); err != nil {
-		log.Printf("failed to start %v (%s)", execFile, err)
+		cmdlog := name + " " + strings.Join(args, " ")
+		log.Printf("failed to start %v (%s)", cmdlog, err)
 		return 0
 	}
 
@@ -392,20 +406,26 @@ func (le *LuaExtender) exec(l *lua.LState) int {
 }
 
 func (le *LuaExtender) execWithTriggers(l *lua.LState) int {
-	execFile := l.ToString(1)
+	name := l.ToString(1)
+	args := make([]string, l.GetTop()-1)
+	for i := 2; i <= l.GetTop(); i++ {
+		args[i-2] = l.ToString(i)
+	}
+
 	npty, ntty, err := pty.Open()
 	if err != nil {
 		log.Printf("could not start pty (%s)", err)
 	}
 
-	cmd := exec.Command(execFile)
+	cmd := exec.Command(name, args...)
 	cmd.Stdout = ntty
 	cmd.Stdin = ntty
 	cmd.Stderr = ntty
 	setCtrlTerm(cmd)
 
 	if err := cmd.Start(); err != nil {
-		log.Printf("failed to start %v (%s)", execFile, err)
+		cmdlog := name + " " + strings.Join(args, " ")
+		log.Printf("failed to start %v (%s)", cmdlog, err)
 		return 0
 	}
 
@@ -463,15 +483,20 @@ func (le *LuaExtender) execWithTriggers(l *lua.LState) int {
 
 func (le *LuaExtender) execNonInteractive(l *lua.LState) int {
 	var outb, errb bytes.Buffer
-	execFile := l.ToString(1)
+	name := l.ToString(1)
+	args := make([]string, l.GetTop()-1)
+	for i := 2; i <= l.GetTop(); i++ {
+		args[i-2] = l.ToString(i)
+	}
 
-	cmd := exec.Command(execFile)
+	cmd := exec.Command(name, args...)
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 	//cmd.Stdin =
 
 	if err := cmd.Start(); err != nil {
-		log.Printf("failed to start %v (%s)", execFile, err)
+		cmdlog := name + " " + strings.Join(args, " ")
+		log.Printf("failed to start %v (%s)", cmdlog, err)
 		return 0
 	}
 
@@ -479,17 +504,25 @@ func (le *LuaExtender) execNonInteractive(l *lua.LState) int {
 
 	le.Term.WriteString(outb.String())
 	if errb.String() != "" {
-		log.Printf("exec %v: %v", execFile, errb.String())
+		cmdlog := name + " " + strings.Join(args, " ")
+		log.Printf("exec %v: %v", cmdlog, errb.String())
 	}
 
 	le.ExternalExec = false
-	return 0
+
+	l.Push(lua.LString(outb.String()))
+	return 1
 }
 
-// Winsize stores the Height and Width of a terminal.
-type Winsize struct {
-	Height uint16
-	Width  uint16
-	x      uint16 // unused
-	y      uint16 // unused
+func (le *LuaExtender) printWithPosition(l *lua.LState) int {
+	row := l.ToInt(1)
+	col := l.ToInt(2)
+	s := l.ToString(3)
+	s = strings.Replace(s, "\r", "", -1)
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		le.Term.MoveCursor(row+i, col)
+		le.Term.WriteString(line)
+	}
+	return 0
 }
