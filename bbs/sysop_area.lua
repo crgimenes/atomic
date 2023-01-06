@@ -28,6 +28,13 @@ function SysopArea()
         SysopMenu()
         return
     end
-    MainMenu()
+    Term.cls()
+    if (fileExists("nonfree/squiddy.ans")) then
+        Term.writeFromASCII("nonfree/squiddy.ans")
+    end
+    local ad = readFile("fixtures/access_denied.ans")
+    Term.printMultipleLines(6, 3, ad)
+    Term.moveCursor(23, 1)
     Term.write("\r\nyou are not a sysop\r\n")
+    -- TODO: add a timer to go back to main menu
 end

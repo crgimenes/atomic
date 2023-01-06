@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -235,6 +236,19 @@ func (le *LuaExtender) setCursorVisible(l *lua.LState) int {
 	return 0
 }
 
+func (le *LuaExtender) printMultipleLines(l *lua.LState) int {
+	row := l.ToInt(1)
+	col := l.ToInt(2)
+	s := l.ToString(3)
+	s = strings.Replace(s, "\r", "", -1)
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		le.Term.MoveCursor(row+i, col)
+		le.Term.WriteString(line)
+	}
+	return 0
+}
+
 func (le *LuaExtender) termLoader(L *lua.LState) int {
 	var termAPI = map[string]lua.LGFunction{
 		"cls":                   le.cls,
@@ -267,6 +281,7 @@ func (le *LuaExtender) termLoader(L *lua.LState) int {
 		"setUnderline":          le.setUnderline,
 		"write":                 le.write,
 		"writeFromASCII":        le.writeFromASCII,
+		"printMultipleLines":    le.printMultipleLines,
 	}
 
 	t := le.luaState.NewTable()

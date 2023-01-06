@@ -83,6 +83,7 @@ func New(cfg config.Config,
 	le.luaState.SetGlobal("trigger", le.luaState.NewFunction(le.trigger))
 	le.luaState.SetGlobal("getUser", le.luaState.NewFunction(le.getUser))
 	le.luaState.SetGlobal("hasGroup", le.luaState.NewFunction(le.hasGroup))
+	le.luaState.SetGlobal("readFile", le.luaState.NewFunction(le.readFile))
 
 	le.luaState.PreloadModule("term", le.termLoader)
 	return le
@@ -514,15 +515,13 @@ func (le *LuaExtender) execNonInteractive(l *lua.LState) int {
 	return 1
 }
 
-func (le *LuaExtender) printWithPosition(l *lua.LState) int {
-	row := l.ToInt(1)
-	col := l.ToInt(2)
-	s := l.ToString(3)
-	s = strings.Replace(s, "\r", "", -1)
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		le.Term.MoveCursor(row+i, col)
-		le.Term.WriteString(line)
+func (le *LuaExtender) readFile(l *lua.LState) int {
+	file := l.ToString(1)
+	content, err := os.ReadFile(file)
+	if err != nil {
+		log.Printf("error reading file %v, %v", file, err)
+		return 0
 	}
-	return 0
+	l.Push(lua.LString(string(content)))
+	return 1
 }
