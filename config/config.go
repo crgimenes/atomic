@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Debug      bool   `json:"debug" ini:"debug" cfg:"debug" cfgDefault:"false"`
-	Listen     string `json:"listen" ini:"listen" cfg:"listen" cfgDefault:"0.0.0.0:2200"`
-	PrivateKey string `json:"private_key" ini:"private_key" cfg:"private_key" cfgDefault:"id_rsa"`
-	BaseBBSDir string `json:"base_bbs_dir" ini:"base_bbs_dir" cfg:"base_bbs_dir" cfgDefault:"./"`
+	Debug              bool   `json:"debug" ini:"debug" cfg:"debug" cfgDefault:"false"`
+	Listen             string `json:"listen" ini:"listen" cfg:"listen" cfgDefault:"0.0.0.0:2200"`
+	PrivateKey         string `json:"private_key" ini:"private_key" cfg:"private_key" cfgDefault:"id_rsa"`
+	BaseBBSDir         string `json:"base_bbs_dir" ini:"base_bbs_dir" cfg:"base_bbs_dir" cfgDefault:"./"`
+	EnableGuestAccount bool   `json:"enable_guest_account" ini:"enable_guest_account" cfg:"enable_guest_account" cfgDefault:"false"`
 }
 
 func Load() (Config, error) {

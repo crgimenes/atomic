@@ -69,6 +69,27 @@ func (s *SSHServer) keyboardInteractiveCallback(c ssh.ConnMetadata, client ssh.K
 }
 
 func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, error) {
+
+	if s.cfg.EnableGuestAccount &&
+		nickname == "guest" &&
+		password == "guest" {
+
+		t := time.Now().Format("2006-01-02 15:04:05")
+		user := database.User{
+			ID:        9900,
+			Nickname:  "guest",
+			Email:     "guest@localhost",
+			Groups:    "guest",
+			CreatedAt: t,
+			UpdatedAt: t,
+		}
+
+		s.mux.Lock()
+		s.Users[nickname] = &user
+		s.mux.Unlock()
+		return nil, nil
+	}
+
 	db, err := database.New()
 	if err != nil {
 		return nil, err
