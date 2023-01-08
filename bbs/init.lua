@@ -2,8 +2,8 @@ Term = require("term")
 require "sysop_area"
 
 if (getEnv("LANG") == "") then
-    Term.setOutputMode("CP850")
-    -- Term.setOutputMode("CP437")
+    -- Term.setOutputMode("CP850")
+    Term.setOutputMode("CP437")
     -- Term.setOutputMode("UTF-8") -- default
 end
 
