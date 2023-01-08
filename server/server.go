@@ -20,10 +20,10 @@ import (
 )
 
 type SSHServer struct {
-	mux   sync.Mutex
-	proto *lua.FunctionProto
-	cfg   config.Config
-	Users map[string]*database.User
+	mux      sync.Mutex
+	proto    *lua.FunctionProto
+	cfg      config.Config
+	Sessions map[string]*database.User
 }
 
 const (
@@ -32,8 +32,8 @@ const (
 
 func New(cfg config.Config) *SSHServer {
 	return &SSHServer{
-		cfg:   cfg,
-		Users: make(map[string]*database.User),
+		cfg:      cfg,
+		Sessions: make(map[string]*database.User),
 	}
 }
 
@@ -42,14 +42,16 @@ func (s *SSHServer) authLogCallback(c ssh.ConnMetadata, method string, err error
 		log.Printf("failed authentication for %q from %v, method %v, error: %v", c.User(), c.RemoteAddr(), method, err)
 		return
 	}
-	log.Println("auth log callback", s.Users[c.User()].Nickname)
+	sessionID := fmt.Sprintf("%x", c.SessionID())
+	log.Println("auth log callback", s.Sessions[sessionID].Nickname)
 	log.Printf("successful authentication for %q from %v, method %v", c.User(), c.RemoteAddr(), method)
 }
 
 func (s *SSHServer) passwordCallback(c ssh.ConnMetadata, password []byte) (*ssh.Permissions, error) {
 	log.Println("password callback")
+	sessionID := fmt.Sprintf("%x", c.SessionID())
 
-	return s.validateLogin(c.User(), string(password))
+	return s.validateLogin(sessionID, c.User(), string(password))
 }
 
 func (s *SSHServer) keyboardInteractiveCallback(c ssh.ConnMetadata, client ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
@@ -64,11 +66,11 @@ func (s *SSHServer) keyboardInteractiveCallback(c ssh.ConnMetadata, client ssh.K
 	if len(answers) != 1 {
 		password = answers[0]
 	}
-
-	return s.validateLogin(c.User(), password)
+	sessionID := fmt.Sprintf("%x", c.SessionID())
+	return s.validateLogin(sessionID, c.User(), password)
 }
 
-func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, error) {
+func (s *SSHServer) validateLogin(sessionID, nickname, password string) (*ssh.Permissions, error) {
 
 	if s.cfg.EnableGuestAccount &&
 		nickname == "guest" &&
@@ -85,7 +87,7 @@ func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, 
 		}
 
 		s.mux.Lock()
-		s.Users[nickname] = &user
+		s.Sessions[sessionID] = &user
 		s.mux.Unlock()
 		return nil, nil
 	}
@@ -102,7 +104,7 @@ func (s *SSHServer) validateLogin(nickname, password string) (*ssh.Permissions, 
 	}
 
 	s.mux.Lock()
-	s.Users[nickname] = &user
+	s.Sessions[sessionID] = &user
 	s.mux.Unlock()
 
 	return nil, nil
@@ -114,6 +116,8 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 		c.RemoteAddr(),
 		key.Type(),
 		ssh.FingerprintSHA256(key))
+
+	sessionID := fmt.Sprintf("%x", c.SessionID())
 
 	db, err := database.New()
 	if err != nil {
@@ -143,14 +147,14 @@ func (s *SSHServer) publicKeyCallback(c ssh.ConnMetadata, key ssh.PublicKey) (*s
 	}
 
 	s.mux.Lock()
-	s.Users[c.User()] = &user // TODO: add last login date time
+	s.Sessions[sessionID] = &user // TODO: add last login date time
 	s.mux.Unlock()
 
 	log.Printf("stu user %q, %q\n", user.Nickname, user.Email)
-	log.Printf("map user %q, %q\n", s.Users[c.User()].Nickname, s.Users[c.User()].Email)
+	log.Printf("map user %q, %q\n", s.Sessions[sessionID].Nickname, s.Sessions[sessionID].Email)
 
-	// list all users
-	for k, u := range s.Users {
+	// list all sessions
+	for k, u := range s.Sessions {
 		log.Printf("%v, user %q, %q\n", k, u.Nickname, u.Email)
 	}
 
@@ -242,6 +246,9 @@ func (s *SSHServer) ListenAndServe() error {
 			continue
 		}
 
+		//sshConn.SessionID()
+		//sshConn.User()
+
 		log.Printf("new SSH connection from %s, %s",
 			sshConn.RemoteAddr(),
 			sshConn.ClientVersion())
@@ -276,10 +283,11 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 		MaxInputLength: 80,
 	}
 
+	sessionID := fmt.Sprintf("%x", serverConn.SessionID())
 	le := luaengine.New(
 		s.cfg,
-		&s.Users,
-		s.Users[serverConn.User()],
+		&s.Sessions,
+		s.Sessions[sessionID],
 		&term,
 		serverConn,
 		conn,
@@ -312,7 +320,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 				//////////////////////////////
 
-				_, ok := s.Users[serverConn.User()]
+				_, ok := s.Sessions[sessionID]
 				if !ok {
 					log.Printf("user %v not found, recreating\n", serverConn.User())
 					// TODO: user is reconnecting, but not found in the list
@@ -321,7 +329,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 
 				// list users
 				log.Println("users:")
-				for _, u := range s.Users {
+				for _, u := range s.Sessions {
 					log.Printf("  %v\n", u.Nickname)
 				}
 
@@ -356,7 +364,7 @@ func (s *SSHServer) handleChannel(serverConn *ssh.ServerConn, newChannel ssh.New
 					le.IsConnected = false
 					le.Conn.Close()
 					serverConn.Conn.Close() // TODO: detect multiple connections
-					delete(s.Users, serverConn.User())
+					delete(s.Sessions, sessionID)
 				}()
 
 				err = le.InitState()

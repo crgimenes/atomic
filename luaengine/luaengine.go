@@ -27,7 +27,7 @@ type LuaExtender struct {
 	triggerList  map[string]*lua.LFunction
 	Proto        *lua.FunctionProto
 	ExternalExec bool
-	Users        *map[string]*database.User
+	Sessions     *map[string]*database.User
 	User         *database.User
 	Term         *term.Term
 	ServerConn   *ssh.ServerConn
@@ -51,7 +51,7 @@ type Winsize struct {
 
 // New creates a new instance of LuaExtender.
 func New(cfg config.Config,
-	users *map[string]*database.User,
+	Sessions *map[string]*database.User,
 	user *database.User,
 	term *term.Term,
 	serverConn *ssh.ServerConn,
@@ -59,7 +59,7 @@ func New(cfg config.Config,
 ) *LuaExtender {
 
 	le := &LuaExtender{
-		Users:       users,
+		Sessions:    Sessions,
 		User:        user,
 		Term:        term,
 		ServerConn:  serverConn,
@@ -263,7 +263,8 @@ func (le *LuaExtender) quit(l *lua.LState) int {
 	le.Conn.Close()
 	le.IsConnected = false
 	le.ServerConn.Conn.Close()
-	delete(*le.Users, le.User.Nickname)
+	sessionID := fmt.Sprintf("%x", le.ServerConn.SessionID())
+	delete(*le.Sessions, sessionID)
 	return 0
 }
 
