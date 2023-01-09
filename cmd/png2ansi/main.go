@@ -122,7 +122,7 @@ Brown				33		43		170,85,0
 Blue				34		44		0,0,170
 Magenta				35		45		170,0,170
 Cyan				36		46		0,170,170
-White				37		47		170,170,170
+Light Gray			37		47		170,170,170
 Foreground Only
 Light Blue			90		-		85,85,85
 Light Red			91		-		255,85,85
@@ -131,7 +131,7 @@ Yellow				93		-		255,255,85
 Light Blue			94		-		85,85,255
 Light Magenta		95		-		255,85,255
 Light Cyan			96		-		85,255,255
-Light White			97		-	  	255,255,255
+White				97		-	  	255,255,255
 */
 
 // RGB2VGAFg convert RGB to 4 bit VGA ANSI colorcode (foreground)
