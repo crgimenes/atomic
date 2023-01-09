@@ -26,23 +26,20 @@ if (fileExists("nonfree/squiddy.ans")) then
 end
 
 function MainMenu()
-    Term.setColor("WHITE")
-    Term.setBackgroundColor("BLACK")
     clearTriggers()
     trigger("1", Runiptclient)
     trigger("2", SysopArea)
     trigger("3", ExitConnection)
+    Term.write("\27[37;40m")
     Term.cls()
 
     Term.print(5, 8, "1 show shared terminal")
     Term.print(6, 8, "2 sysop area")
     Term.print(7, 8, "3 quit")
 
-    -- Term.write("choose an option\r\n")
-    Term.setColor("MAGENTA")
+    Term.write("\27[35;40m")
     Term.print(15, 8, "option: ")
-
-    Term.setColor("WHITE")
+    Term.write("\27[37;40m")
 
 end
 
