@@ -75,6 +75,42 @@ builds:
     goarm:
       - 6
       - 7
+  - id: png2ansi
+    main: ./cmd/png2ansi/main.go
+    ldflags: -s -w
+    binary: png2ansi
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - freebsd
+    goarch:
+      - amd64
+      - 386
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
+  - id: keyboard
+    main: ./cmd/keyboard/main.go
+    ldflags: -s -w
+    binary: keyboard
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - freebsd
+    goarch:
+      - amd64
+      - 386
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
 archives:
   - replacements:
       darwin: Darwin
