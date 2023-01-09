@@ -118,20 +118,20 @@ Name    			fg  	bg		RGB
 Black				30		40		0,0,0
 Red					31		41		170,0,0
 Green				32		42		0,170,0
-Yellow				33		43		170,85,0
+Brown				33		43		170,85,0
 Blue				34		44		0,0,170
 Magenta				35		45		170,0,170
 Cyan				36		46		0,170,170
 White				37		47		170,170,170
 Foreground Only
-Bright Black		90		-		85,85,85
-Bright Red			91		-		255,85,85
-Bright Green		92		-		85,255,85
-Bright Yellow		93		-		255,255,85
-Bright Blue			94		-		85,85,255
-Bright Magenta		95		-		255,85,255
-Bright Cyan			96		-		85,255,255
-Bright White		97		-	  	255,255,255
+Light Blue			90		-		85,85,85
+Light Red			91		-		255,85,85
+Light Green			92		-		85,255,85
+Yellow				93		-		255,255,85
+Light Blue			94		-		85,85,255
+Light Magenta		95		-		255,85,255
+Light Cyan			96		-		85,255,255
+Light White			97		-	  	255,255,255
 */
 
 // RGB2VGAFg convert RGB to 4 bit VGA ANSI colorcode (foreground)
