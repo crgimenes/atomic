@@ -113,6 +113,7 @@ func (p *ImgToANSI) pxColor(x, y int, img image.Image) (r, g, b uint32) {
 
 /*
 VGA 4 bit ANSI color codes
+Background and Foreground
 Name    			fg  	bg		RGB
 Black				30		40		0,0,0
 Red					31		41		170,0,0
@@ -122,14 +123,15 @@ Blue				34		44		0,0,170
 Magenta				35		45		170,0,170
 Cyan				36		46		0,170,170
 White				37		47		170,170,170
-Bright Black		90		100		85,85,85
-Bright Red			91		101		255,85,85
-Bright Green		92		102		85,255,85
-Bright Yellow		93		103		255,255,85
-Bright Blue			94		104		85,85,255
-Bright Magenta		95		105		255,85,255
-Bright Cyan			96		106		85,255,255
-Bright White		97		107  	255,255,255
+Foreground Only
+Bright Black		90		-		85,85,85
+Bright Red			91		-		255,85,85
+Bright Green		92		-		85,255,85
+Bright Yellow		93		-		255,255,85
+Bright Blue			94		-		85,85,255
+Bright Magenta		95		-		255,85,255
+Bright Cyan			96		-		85,255,255
+Bright White		97		-	  	255,255,255
 */
 
 // RGB2VGAFg convert RGB to 4 bit VGA ANSI colorcode (foreground)
@@ -199,22 +201,6 @@ func RGB2VGABg(r, g, b uint32) (bool, int) {
 		return true, 46
 	case red == 170 && green == 170 && blue == 170:
 		return true, 47
-	case red == 85 && green == 85 && blue == 85:
-		return true, 100
-	case red == 255 && green == 85 && blue == 85:
-		return true, 101
-	case red == 85 && green == 255 && blue == 85:
-		return true, 102
-	case red == 255 && green == 255 && blue == 85:
-		return true, 103
-	case red == 85 && green == 85 && blue == 255:
-		return true, 104
-	case red == 255 && green == 85 && blue == 255:
-		return true, 105
-	case red == 85 && green == 255 && blue == 255:
-		return true, 106
-	case red == 255 && green == 255 && blue == 255:
-		return true, 107
 	default:
 		return false, 0
 	}
