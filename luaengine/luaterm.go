@@ -172,70 +172,6 @@ func (le *LuaExtender) exitScreen(l *lua.LState) int {
 	return 0
 }
 
-func (le *LuaExtender) setColor(l *lua.LState) int {
-	s := l.ToString(1)
-	le.Term.SetColor(s)
-	return 0
-}
-
-func (le *LuaExtender) setBackgroundColor(l *lua.LState) int {
-	s := l.ToString(1)
-	le.Term.SetBackgroundColor(s)
-	return 0
-}
-
-func (le *LuaExtender) setColorRGB(l *lua.LState) int {
-	r := l.ToInt(1)
-	g := l.ToInt(2)
-	b := l.ToInt(3)
-	le.Term.SetColorRGB(r, g, b)
-	return 0
-}
-
-func (le *LuaExtender) setBackgroundColorRGB(l *lua.LState) int {
-	r := l.ToInt(1)
-	g := l.ToInt(2)
-	b := l.ToInt(3)
-	le.Term.SetBackgroundColorRGB(r, g, b)
-	return 0
-}
-
-func (le *LuaExtender) setBold(l *lua.LState) int {
-	le.Term.SetBold()
-	return 0
-}
-
-func (le *LuaExtender) setUnderline(l *lua.LState) int {
-	le.Term.SetUnderline()
-	return 0
-}
-
-func (le *LuaExtender) setBlink(l *lua.LState) int {
-	le.Term.SetBlink()
-	return 0
-}
-
-func (le *LuaExtender) setReverse(l *lua.LState) int {
-	le.Term.SetReverse()
-	return 0
-}
-
-func (le *LuaExtender) setInvisible(l *lua.LState) int {
-	le.Term.SetInvisible()
-	return 0
-}
-
-func (le *LuaExtender) reset(l *lua.LState) int {
-	le.Term.Reset()
-	return 0
-}
-
-func (le *LuaExtender) setCursorVisible(l *lua.LState) int {
-	visible := l.ToBool(1)
-	le.Term.SetCursorVisible(visible)
-	return 0
-}
-
 func (le *LuaExtender) printMultipleLines(l *lua.LState) int {
 	row := l.ToInt(1)
 	col := l.ToInt(2)
@@ -251,37 +187,26 @@ func (le *LuaExtender) printMultipleLines(l *lua.LState) int {
 
 func (le *LuaExtender) termLoader(L *lua.LState) int {
 	var termAPI = map[string]lua.LGFunction{
-		"cls":                   le.cls,
-		"drawBox":               le.drawBox,
-		"enterScreen":           le.enterScreen,
-		"exitScreen":            le.exitScreen,
-		"getField":              le.getField,
-		"getOutputMode":         le.getOutputMode,
-		"getPassword":           le.getPassword,
-		"getSize":               le.getSize,
-		"inlineImagesProtocol":  le.inlineImagesProtocol,
-		"moveCursor":            le.moveCursor,
-		"print":                 le.print,
-		"reset":                 le.reset,
-		"resetScreen":           le.resetScreen,
-		"setBackgroundColor":    le.setBackgroundColor,
-		"setBackgroundColorRGB": le.setBackgroundColorRGB,
-		"setBlink":              le.setBlink,
-		"setBold":               le.setBold,
-		"setColor":              le.setColor,
-		"setColorRGB":           le.setColorRGB,
-		"setCursorVisible":      le.setCursorVisible,
-		"setEcho":               le.setEcho,
-		"setInputLimit":         le.setInputLimit,
-		"setInvisible":          le.setInvisible,
-		"setMaxInputLength":     le.setMaxInputLength,
-		"setOutputDelay":        le.setOutputDelay,
-		"setOutputMode":         le.setOutputMode,
-		"setReverse":            le.setReverse,
-		"setUnderline":          le.setUnderline,
-		"write":                 le.write,
-		"writeFromASCII":        le.writeFromASCII,
-		"printMultipleLines":    le.printMultipleLines,
+		"cls":                  le.cls,
+		"drawBox":              le.drawBox,
+		"enterScreen":          le.enterScreen,
+		"exitScreen":           le.exitScreen,
+		"getField":             le.getField,
+		"getOutputMode":        le.getOutputMode,
+		"getPassword":          le.getPassword,
+		"getSize":              le.getSize,
+		"inlineImagesProtocol": le.inlineImagesProtocol,
+		"moveCursor":           le.moveCursor,
+		"print":                le.print,
+		"resetScreen":          le.resetScreen,
+		"setEcho":              le.setEcho,
+		"setInputLimit":        le.setInputLimit,
+		"setMaxInputLength":    le.setMaxInputLength,
+		"setOutputDelay":       le.setOutputDelay,
+		"setOutputMode":        le.setOutputMode,
+		"write":                le.write,
+		"writeFromASCII":       le.writeFromASCII,
+		"printMultipleLines":   le.printMultipleLines,
 	}
 
 	t := le.luaState.NewTable()
