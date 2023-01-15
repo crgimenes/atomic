@@ -26,6 +26,9 @@ var (
 	ErrInvalidCredentials       = errors.New("invalid credentials")
 
 	connectionString = `file:atomic.db?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`
+
+	// go:embed migration01.sql
+	migration01 string
 )
 
 type Database struct {
@@ -85,16 +88,7 @@ func (d *Database) RunMigration() error {
 	switch lastMigration {
 	case 0:
 		log.Println("running migration 1")
-		_, err = tx.Exec(`CREATE TABLE IF NOT EXISTS users (
-					id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-					nickname TEXT NOT NULL UNIQUE,
-					email TEXT NOT NULL UNIQUE,
-					password TEXT, -- can be empty if using ssh key
-					ssh_public_key TEXT, -- can be empty if using password
-					groups TEXT NOT NULL DEFAULT 'users', -- users,sysop
-					created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-					updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-				)`)
+		_, err = tx.Exec(migration01)
 		if err != nil {
 			_ = tx.Rollback()
 			return err
