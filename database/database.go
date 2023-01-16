@@ -90,7 +90,8 @@ func (d *Database) RunMigration() error {
 	switch lastMigration {
 	case 0:
 		log.Println("running migration 1")
-		_, err = tx.Exec(migration01)
+		migration := fmt.Sprintf(migration01, tablePrefix)
+		_, err = tx.Exec(migration)
 		if err != nil {
 			_ = tx.Rollback()
 			return err
