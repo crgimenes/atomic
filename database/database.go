@@ -140,7 +140,7 @@ func (d *Database) VerifyMigration() (int, error) {
 		lastMigration int
 		count         int
 	)
-	sql := `SELECT COUNT(*) FROM %smigrations`
+	sql := `SELECT COUNT(*) FROM %s_migrations`
 	sql = fmt.Sprintf(sql, tablePrefix)
 	err := d.db.Get(&count, sql)
 	if err != nil {
@@ -148,7 +148,7 @@ func (d *Database) VerifyMigration() (int, error) {
 	}
 	log.Printf("migrations: %d", count)
 	if count != 0 {
-		sql := `SELECT MAX(id) as max FROM %smigrations`
+		sql := `SELECT MAX(id) as max FROM %s_migrations`
 		sql = fmt.Sprintf(sql, tablePrefix)
 		err = d.db.Get(&lastMigration, sql)
 		if err != nil {
@@ -218,7 +218,7 @@ func (d *Database) CreateUser(nickname, email, password, sshPublicKey, groups st
 
 func (d *Database) GetUserByID(id int) (User, error) {
 	var user User
-	sql := `SELECT * FROM %susers WHERE id = $1`
+	sql := `SELECT * FROM %s_users WHERE id = $1`
 	sql = fmt.Sprintf(sql, tablePrefix)
 	err := d.db.QueryRowx(sql, id).StructScan(&user)
 	if err != nil {
@@ -230,7 +230,7 @@ func (d *Database) GetUserByID(id int) (User, error) {
 
 func (d *Database) GetUserByEmail(email string) (User, error) {
 	var user User
-	sql := `SELECT * FROM %susers WHERE email = $1`
+	sql := `SELECT * FROM %s_users WHERE email = $1`
 	sql = fmt.Sprintf(sql, tablePrefix)
 	err := d.db.QueryRowx(sql, email).StructScan(&user)
 	if err != nil {
@@ -242,7 +242,7 @@ func (d *Database) GetUserByEmail(email string) (User, error) {
 
 func (d *Database) GetUserByNickname(nickname string) (User, error) {
 	var user User
-	sql := `SELECT * FROM %susers WHERE nickname = $1`
+	sql := `SELECT * FROM %s_users WHERE nickname = $1`
 	sql = fmt.Sprintf(sql, tablePrefix)
 	err := d.db.QueryRowx(sql, nickname).StructScan(&user)
 	if err != nil {
