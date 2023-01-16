@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/jmoiron/sqlx"
@@ -29,6 +30,7 @@ var (
 
 	// go:embed migration01.sql
 	migration01 string
+	tablePrefix = "atomic"
 )
 
 type Database struct {
@@ -95,7 +97,9 @@ func (d *Database) RunMigration() error {
 		}
 
 		// update migration table
-		_, err = tx.Exec(`INSERT INTO migrations (id) VALUES (1)`)
+		sql := `INSERT INTO %s_migrations (id) VALUES (1)`
+		sql = fmt.Sprintf(sql, tablePrefix)
+		_, err = tx.Exec(sql)
 		if err != nil {
 			_ = tx.Rollback()
 			return err
@@ -121,10 +125,12 @@ func (d *Database) RunMigration() error {
 }
 
 func (d *Database) createMigrationTable() error {
-	_, err := d.db.Exec(`CREATE TABLE IF NOT EXISTS migrations (
-				id INTEGER PRIMARY KEY,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-				)`)
+	sql := `CREATE TABLE IF NOT EXISTS %smigrations (
+		id INTEGER PRIMARY KEY,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`
+	sql = fmt.Sprintf(sql, tablePrefix)
+	_, err := d.db.Exec(sql)
 	return err
 }
 
@@ -133,13 +139,17 @@ func (d *Database) VerifyMigration() (int, error) {
 		lastMigration int
 		count         int
 	)
-	err := d.db.Get(&count, `SELECT COUNT(*) FROM migrations`)
+	sql := `SELECT COUNT(*) FROM %smigrations`
+	sql = fmt.Sprintf(sql, tablePrefix)
+	err := d.db.Get(&count, sql)
 	if err != nil {
 		return 0, err
 	}
 	log.Printf("migrations: %d", count)
 	if count != 0 {
-		err = d.db.Get(&lastMigration, "SELECT MAX(id) as max FROM migrations")
+		sql := `SELECT MAX(id) as max FROM %smigrations`
+		sql = fmt.Sprintf(sql, tablePrefix)
+		err = d.db.Get(&lastMigration, sql)
 		if err != nil {
 			return 0, err
 		}
@@ -191,13 +201,14 @@ func (d *Database) CreateUser(nickname, email, password, sshPublicKey, groups st
 		groups = "users"
 	}
 
-	sql := `INSERT INTO users (
+	sql := `INSERT INTO %susers (
 		nickname,
 		email,
 		password,
 		ssh_public_key, 
 		groups) 
 		VALUES ($1, $2, $3, $4, $5) RETURNING *`
+	sql = fmt.Sprintf(sql, tablePrefix)
 	var user User
 	err := d.db.QueryRowx(sql, nickname, email, password, sshPublicKey, groups).StructScan(&user)
 
@@ -206,7 +217,9 @@ func (d *Database) CreateUser(nickname, email, password, sshPublicKey, groups st
 
 func (d *Database) GetUserByID(id int) (User, error) {
 	var user User
-	err := d.db.QueryRowx(`SELECT * FROM users WHERE id = $1`, id).StructScan(&user)
+	sql := `SELECT * FROM %susers WHERE id = $1`
+	sql = fmt.Sprintf(sql, tablePrefix)
+	err := d.db.QueryRowx(sql, id).StructScan(&user)
 	if err != nil {
 		return User{}, err
 	}
@@ -216,7 +229,9 @@ func (d *Database) GetUserByID(id int) (User, error) {
 
 func (d *Database) GetUserByEmail(email string) (User, error) {
 	var user User
-	err := d.db.QueryRowx(`SELECT * FROM users WHERE email = $1`, email).StructScan(&user)
+	sql := `SELECT * FROM %susers WHERE email = $1`
+	sql = fmt.Sprintf(sql, tablePrefix)
+	err := d.db.QueryRowx(sql, email).StructScan(&user)
 	if err != nil {
 		return User{}, err
 	}
@@ -226,7 +241,9 @@ func (d *Database) GetUserByEmail(email string) (User, error) {
 
 func (d *Database) GetUserByNickname(nickname string) (User, error) {
 	var user User
-	err := d.db.QueryRowx(`SELECT * FROM users WHERE nickname = $1`, nickname).StructScan(&user)
+	sql := `SELECT * FROM %susers WHERE nickname = $1`
+	sql = fmt.Sprintf(sql, tablePrefix)
+	err := d.db.QueryRowx(sql, nickname).StructScan(&user)
 	if err != nil {
 		return User{}, err
 	}
