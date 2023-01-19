@@ -2,33 +2,25 @@ package main
 
 import (
 	"fmt"
-
-	"golang.org/x/net/websocket"
+	"syscall/js"
 )
 
+func writeToScreen(this js.Value, args []js.Value) any {
+	// print args in the console
+	for i, arg := range args {
+		fmt.Println("GO arg", i, "is", arg)
+	}
+	ret := js.ValueOf("ret from GO Hello, world!")
+	return ret
+}
+
 func main() {
-	// Connect to the server
-	ws, err := websocket.Dial("ws://localhost:8080/echo/", "", "http://localhost")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer ws.Close()
+	fmt.Println("init from wasm")
+	js.Global().Set("writeToScreen", js.FuncOf(writeToScreen))
 
-	// Send a message to the server
-	err = websocket.Message.Send(ws, "Hello from the client!")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// call JS function from Go
+	js.Global().Call("sendToServer", "JS sendToServer called from GO")
 
-	// Read in a message from the server
-	var msg string
-	err = websocket.Message.Receive(ws, &msg)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	// Print the message to the console
-	fmt.Printf("Received: %s\n", msg)
+	c := make(chan struct{}, 0)
+	<-c
 }

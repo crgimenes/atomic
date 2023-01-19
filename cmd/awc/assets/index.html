@@ -6,29 +6,31 @@
     <script src="/assets/wasm_exec.js">
     </script>
     <script>
+
+        var socket = new WebSocket("ws://localhost:8080/echo");
+
+        function sendToServer(bytes) {
+            socket.send(bytes);
+            console.log("JS sendToServer: " + bytes);
+        }
+
+        // initialize the Go WASM module
         var go = new Go();
         WebAssembly.instantiateStreaming(fetch("/assets/main.wasm"), go.importObject).then(result => {
             go.run(result.instance);
         });
-    </script>
-
-    <script>
-        var socket = new WebSocket("ws://localhost:8080/echo");
-
-        function sendBytes(bytes) {
-            socket.send(bytes);
-            console.log(bytes);
-        }
 
         socket.onmessage = function (event) {
             var receivedBytes = event.data;
-            console.log(receivedBytes);
+            console.log("JS socket.onmessage: " + receivedBytes);
+            ret = writeToScreen(receivedBytes);
+            console.log("JS socket.onmessage ret: " + ret);
         }
     </script>
 </head>
 
 <body>
-    <button onclick="sendBytes('teste')">Teste</button>
+    <button onclick="sendToServer('teste')">Teste</button>
 
 </body>
 
