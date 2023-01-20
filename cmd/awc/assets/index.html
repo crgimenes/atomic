@@ -3,9 +3,59 @@
 
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ATOMIC</title>
+    <style>
+        body {
+            height: 100%;
+            width: 100%;
+            background-color: black;
+            color: white;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+        }
+
+        canvas {
+            background-color: black;
+            border: 0;
+            display: block;
+            margin: 0 auto;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <!-- <button onclick="sendToServer('teste')">Teste</button> -->
+
     <script src="/assets/wasm_exec.js">
     </script>
     <script>
+
+        function resizeCanvas() {
+            var canvas = document.getElementById("canvas");
+            var proportion = 1.3333333333333333;
+
+            var width = window.innerWidth;
+            var height = window.innerHeight;
+
+            if (width / height > proportion) {
+                width = height * proportion;
+            } else {
+                height = width / proportion;
+            }
+
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+
 
         var socket = new WebSocket("ws://localhost:8080/echo");
 
@@ -26,12 +76,33 @@
             ret = writeToScreen(receivedBytes);
             console.log("JS socket.onmessage ret: " + ret);
         }
+
+        document.onkeydown = function (event) {
+            console.log("keydown: ", event.key);
+            sendToServer(event.key);
+        }
+
+        document.onkeyup = function (event) {
+            console.log("keyup: ", event.key);
+            sendToServer(event.key);
+        }
+
+        document.onmousedown = function (event) {
+            console.log("mousedown: ", event.button);
+            sendToServer(event.button);
+        }
+
+        document.onmouseup = function (event) {
+            console.log("mouseup: ", event.button);
+            sendToServer(event.button);
+        }
+
+        document.onmousemove = function (event) {
+            console.log("mousemove: ", event.movementX, event.movementY);
+            sendToServer(event.movementX + " " + event.movementY);
+        }
+
     </script>
-</head>
-
-<body>
-    <button onclick="sendToServer('teste')">Teste</button>
-
 </body>
 
 </html>
