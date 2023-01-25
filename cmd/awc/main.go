@@ -32,14 +32,39 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 func echoServer(ws *websocket.Conn) {
 	defer ws.Close()
+	ws.MaxPayloadBytes = 1024 * 1024
+	//ws.SetDeadline(time.Now().Add(5 * time.Second))
+
+	// timmer channel
+	//timer := time.After(1 * time.Second)
+
+	go func() {
+		for {
+			err := websocket.Message.Send(ws, "ping")
+			if err != nil {
+				fmt.Println("Error sending to websocket:", err)
+				return
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 	for {
 		var message string
-		if err := websocket.Message.Receive(ws, &message); err != nil {
+		err := websocket.Message.Receive(ws, &message)
+		if err != nil {
 			fmt.Println("Error reading from websocket:", err)
 			break
 		}
 		fmt.Println("Received message:", message)
-		if err := websocket.Message.Send(ws, message); err != nil {
+		if message == "pong" {
+			continue
+		}
+		if message == "ping" {
+			message = "pong"
+		}
+		err = websocket.Message.Send(ws, message)
+		if err != nil {
 			fmt.Println("Error sending to websocket:", err)
 			break
 		}
