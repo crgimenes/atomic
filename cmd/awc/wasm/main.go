@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image/color"
-	"log"
 	"math/rand"
 	"syscall/js"
 	"time"
@@ -164,15 +163,19 @@ func main() {
 	//go func() {
 	rand.Seed(time.Now().UnixNano())
 
-	ebiten.SetWindowSize(screenWidth*6, screenHeight*6)
-	ebiten.SetWindowTitle("Doom Fire (Ebitengine Demo)")
-	if err := ebiten.RunGame(NewGame()); err != nil {
-		log.Fatal(err)
-	}
+	//ebiten.SetWindowSize(screenWidth*6, screenHeight*6)
+	//ebiten.SetWindowTitle("Doom Fire (Ebitengine Demo)")
+	//if err := ebiten.RunGame(NewGame()); err != nil {
+	//	log.Fatal(err)
+	//}
 	//}()
 
 	//c := make(chan struct{}, 0)
 	//<-c
+
+	ct := New()
+	ct.Run()
+
 }
 
 /*
