@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ATOMIC</title>
+
     <style>
         body {
             height: 100%;
@@ -28,13 +29,15 @@
 </head>
 
 <body>
+    <!--
     <canvas id="canvas" width="800" height="600"></canvas>
+    -->
     <!-- <button onclick="sendToServer('teste')">Teste</button> -->
 
     <script src="/assets/wasm_exec.js">
     </script>
     <script>
-
+        /*
         function resizeCanvas() {
             var canvas = document.getElementById("canvas");
             var proportion = 1.3333333333333333;
@@ -54,6 +57,7 @@
 
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
+        */
 
         var socket = null;
         function connect_socket() {
@@ -88,7 +92,7 @@
         function heartbeat() {
             if (!socket) return;
             if (socket.readyState !== 1) return;
-            socket.send("ping");
+            //socket.send("ping");
             setTimeout(heartbeat, 1000);
         }
 
@@ -97,7 +101,7 @@
             console.log("JS socket.onmessage: " + receivedBytes);
             if (receivedBytes == "pong") return;
             if (receivedBytes == "ping") {
-                socket.send("pong");
+                //socket.send("pong");
                 return;
             }
             ret = writeToScreen(receivedBytes);
