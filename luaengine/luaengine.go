@@ -16,7 +16,7 @@ import (
 	"crg.eti.br/go/atomic/term"
 	"github.com/creack/pty"
 	lua "github.com/yuin/gopher-lua"
-	parse "github.com/yuin/gopher-lua/parse"
+	"github.com/yuin/gopher-lua/parse"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -126,7 +126,8 @@ func (le *LuaExtender) logf(l *lua.LState) int {
 }
 
 func (le *LuaExtender) Close() error {
-	return le.Close()
+	le.luaState.Close()
+	return nil
 }
 
 func (le *LuaExtender) Input(s string) {
