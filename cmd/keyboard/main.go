@@ -3,21 +3,23 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 func formatHex(b []byte) string {
-	var s string
+	sb := strings.Builder{}
+
 	for _, v := range b {
-		if s != "" {
-			s += " "
+		if sb.Len() > 0 {
+			sb.WriteString(" ")
 		}
 
-		s += fmt.Sprintf("%02x", v)
+		sb.WriteString(fmt.Sprintf("%02x", v))
 	}
 
-	return s
+	return sb.String()
 }
 
 func main() {
