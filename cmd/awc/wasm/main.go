@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"math/rand"
 	"syscall/js"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -161,7 +160,6 @@ func main() {
 	*/
 
 	//go func() {
-	rand.Seed(time.Now().UnixNano())
 
 	//ebiten.SetWindowSize(screenWidth*6, screenHeight*6)
 	//ebiten.SetWindowTitle("Doom Fire (Ebitengine Demo)")
