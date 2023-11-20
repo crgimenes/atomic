@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"log"
@@ -28,9 +29,10 @@ var (
 
 	connectionString = `file:atomic.db?mode=rwc&_journal_mode=WAL&_busy_timeout=10000`
 
-	// go:embed migration01.sql
-	migration01 string
 	tablePrefix = "atomic"
+
+	//go:embed migration01.sql
+	migration01 string
 )
 
 type Database struct {
@@ -126,7 +128,7 @@ func (d *Database) RunMigration() error {
 }
 
 func (d *Database) createMigrationTable() error {
-	sql := `CREATE TABLE IF NOT EXISTS %smigrations (
+	sql := `CREATE TABLE IF NOT EXISTS %s_migrations (
 		id INTEGER PRIMARY KEY,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`
@@ -140,15 +142,27 @@ func (d *Database) VerifyMigration() (int, error) {
 		lastMigration int
 		count         int
 	)
-	sql := `SELECT COUNT(*) FROM %s_migrations`
+	// check if migrations table exists
+	sql := `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='%s_migrations'`
 	sql = fmt.Sprintf(sql, tablePrefix)
 	err := d.db.Get(&count, sql)
 	if err != nil {
 		return 0, err
 	}
+
+	if count == 0 {
+		return 0, nil
+	}
+
+	sql = `SELECT COUNT(*) FROM %s_migrations`
+	sql = fmt.Sprintf(sql, tablePrefix)
+	err = d.db.Get(&count, sql)
+	if err != nil {
+		return 0, err
+	}
 	log.Printf("migrations: %d", count)
 	if count != 0 {
-		sql := `SELECT MAX(id) as max FROM %s_migrations`
+		sql = `SELECT MAX(id) as max FROM %s_migrations`
 		sql = fmt.Sprintf(sql, tablePrefix)
 		err = d.db.Get(&lastMigration, sql)
 		if err != nil {
