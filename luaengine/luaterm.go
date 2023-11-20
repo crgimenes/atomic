@@ -3,7 +3,7 @@ package luaengine
 import (
 	"bufio"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -70,7 +70,7 @@ func (le *LuaExtender) inlineImagesProtocol(l *lua.LState) int {
 		log.Println(err)
 	}
 	reader := bufio.NewReader(f)
-	content, err := ioutil.ReadAll(reader)
+	content, err := io.ReadAll(reader)
 	if err != nil {
 		log.Println(err)
 	}
